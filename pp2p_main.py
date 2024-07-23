@@ -11,18 +11,24 @@ peer_address = sys.argv[2]
 pl = PerfectPointToPointLink(this_address, peer_address)
 pl.print_info()
 
+messageLog = []
 try:
     while True:
         msg = input("Insert message to send: ")
+        if(msg != None and msg != 'exit' and msg != ''):
+            messageLog.append(msg)
         if(msg):
             
             pl.send(msg)
             print("Sent: ", msg)
             
             if(msg == "exit"):
+                print(messageLog)
                 break
             
         msg = pl.recv()
+        if(msg != None and msg != 'exit' and msg != ''):
+            messageLog.append(msg)
         if(msg == "exit"):
             break
  
