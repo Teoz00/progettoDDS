@@ -1,9 +1,8 @@
 import zmq
 
 class PerfectPointToPointLink:
-    def __init__(self, first_node, second_node, my_addr, peer_addr):
+    def __init__(self, my_addr, peer_addr):
         # initial stuff
-        self.id = "first_node" + "second_node"
         self.address = my_addr
         self.peer_addr = peer_addr
         
@@ -19,7 +18,7 @@ class PerfectPointToPointLink:
         self.send_socket.connect(f"tcp://{self.peer_addr}")
 
     def print_info(self):
-        print("PP2P info: ", self.id, " - ", self.address, " - ", self.peer_addr)
+        print("PP2P info: ", self.address, " - ", self.peer_addr)
         
     def send(self, msg):
         self.send_socket.send_string(msg)
