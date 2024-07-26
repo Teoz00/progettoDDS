@@ -1,20 +1,32 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
+import time
+import os
 
 from graph_node import Node
 
 # MODIFY graph_main.py FOR OBTAINING RESULTS!
 
+class NodeTerm:
+    def __init__(self, node):
+        self.node = node
+
+    def open_terminal(self):
+        neighbors = self.node.get_neighbors()
+        print(neighbors)
+        command = f'gnome-terminal -- bash -c "python3 node_term.py {self.node.id} {self.node.address} {neighbors}; exec bash"'
+        os.system(command)
+
 class Graph:
-    def __init__(self, num_nodes):
+    def __init__(self, num_nodes, option):
         self.nodes = {}
         
         # generates a random minimally connected graph network
         self.G = nx.random_tree(num_nodes)
         
         while not nx.is_connected(self.G):
-            u, v = (np.random.randint(0, num_nodes), np.random.randint(0, num_nodes))
+            (u, v) = (np.random.randint(0, num_nodes), np.random.randint(0, num_nodes))
             if u != v and not self.G.has_edge(u, v):
                 self.G.add_edge(u, v)
         
@@ -64,10 +76,20 @@ class Graph:
                     address_2 = {port_info['neigh_ip'] + ":" + str(port_info['neigh_port'])}
                     file.write(f"id: {node} - {port_info['neigh']}, addresses:  {address_1} - {address_2}\n")
         
-        # generates communication channels for each node in the graph
+        # generates a terminal window for each node
         for node in detailed_node_list:
-            # print((detailed_node_list[node]['id'][0], detailed_node_list[node]['ip'], detailed_node_list[node]['ports']))
+            # print((detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports']))
             self.nodes[node] = Node(detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports'])
+            
+            # print(f"detailed_node_list[{node}]: {detailed_node_list[node]['ports']}")
+            #print("neighbors in graph_gen.py: ", self.nodes[node].get_neighbors())
+        
+        if(option == 'term'):
+            for node in self.nodes:
+                node_term = NodeTerm(self.nodes[node])
+                node_term.open_terminal()
+                time.sleep(0.5)  # Slight delay to ensure terminal opens properly
+
 
     # plots the graph using matplotlib        
     def plot_graph(self):
@@ -75,5 +97,3 @@ class Graph:
         nx.draw(self.G, pos, with_labels=True, node_color='skyblue', node_size=800, edge_color='gray')
         plt.title("Connect Undirected graph")
         plt.show()
-
-
