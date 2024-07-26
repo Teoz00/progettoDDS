@@ -4,6 +4,7 @@ import numpy as np
 import time
 import os
 
+from dijkstra import Dijkstra
 from graph_node import Node
 
 # MODIFY graph_main.py FOR OBTAINING RESULTS!
@@ -33,7 +34,7 @@ class Graph:
         ip = "127.0.0.1" # WATCH OUT!!! Since the programm has to run locally, there is no need to use different ip than lochalhost one!
         base_port = 49152 # first of the free usable ports for tcp stuff
         
-        nodes_list = self.G.nodes()
+        self.nodes_list = self.G.nodes()
         detailed_node_list = {}
         self.port_map = {}
         port_counter = base_port
@@ -43,14 +44,14 @@ class Graph:
         # self.port_map structure -> dictionary with tuples <id of node using that port, id of node connected with>
         
         # nesteed loop cycles allowing to generate the map of the used ports for avoiding concurrency on them
-        for node in nodes_list:
+        for node in self.nodes_list:
             for neighbor in self.G.neighbors(node):
                 if (node, neighbor) not in self.port_map:
                     self.port_map[(node, neighbor)] = port_counter
                     self.port_map[(neighbor, node)] = port_counter + 1
                     port_counter += 2   
         
-        for node in nodes_list:
+        for node in self.nodes_list:
             ports_for_node = []
             for (node1, node2), port in self.port_map.items():
                 if node1 == node:
@@ -97,3 +98,12 @@ class Graph:
         nx.draw(self.G, pos, with_labels=True, node_color='skyblue', node_size=800, edge_color='gray')
         plt.title("Connect Undirected graph")
         plt.show()
+
+
+    def shortPath(self, source, target):
+        if(source in self.nodes_list and target in self.nodes_list) :
+            path = nx.shortest_path(self.G, source = source, target = target)
+            return path
+
+        
+  

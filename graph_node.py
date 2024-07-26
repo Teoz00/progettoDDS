@@ -21,18 +21,34 @@ class Node:
             # print(my_addr + ":" + str(elem['port']), my_addr)
             self.links.update({str(elem['neigh']): PerfectPointToPointLink(my_addr + ":" + str(elem['port']), str(elem['neigh_ip']) + ":" + str(elem['neigh_port']))})
             
-    def send_to(self, peer_id, msg):
+    def send_to(self, peer_id, msg, shortestPath):
         try:
             if not(isinstance(peer_id, str)):
-                peer_id = str(peer_id)
+                FOUND = False
+                for elem in self.neighbors:
+                    if elem["neigh"] == peer_id:
+                        peer_id = str(peer_id)
+                        self.links.keys(peer_id).send([msg, shortestPath])
+                        FOUND = True
+                        break 
+                
+                if not FOUND:
+                    for elem in self.neighbors:
+                        if elem["neigh"] == shortestPath[0]: 
+                            shortestPath.pop(0)
+                            self.links.keys(elem["neigh"]).send([msg, shortestPath])
                 
             self.links[peer_id].send(msg)
+
         except:
             print("Impossible to send a message to specified peer")
             
     def recv_from(self):
         for link in self.links:
-            link.recv()
+            packet = link.recv()
+            source = link["neigh"] 
+            shortestPath = self.links.keys().send()
+            peer_id = shortestPath[0]
 
     def spawn_terminal(self):
         self.running = True
