@@ -4,7 +4,7 @@ import numpy as np
 import time
 import os
 
-from dijkstra import Dijkstra
+# from dijkstra import Dijkstra
 from graph_node import Node
 
 # MODIFY graph_main.py FOR OBTAINING RESULTS!
@@ -91,19 +91,21 @@ class Graph:
                 node_term.open_terminal()
                 time.sleep(0.5)  # Slight delay to ensure terminal opens properly
 
+    def shortPath(self, source, target):
+        if(source in self.nodes_list and target in self.nodes_list) :
+            path = nx.shortest_path(self.G, source = source, target = target)
+            return path
 
+    def send_msg(self, source, dest, msg):
+        if(source in self.nodes_list and dest in self.nodes_list):
+            # access the instance of Node for accessing "send" method ->
+            # -> objects are into self.nodes!
+            self.nodes[source].send_to(dest, msg, self.shortPath(source, dest))
+            
+  
     # plots the graph using matplotlib        
     def plot_graph(self):
         pos = nx.spring_layout(self.G)
         nx.draw(self.G, pos, with_labels=True, node_color='skyblue', node_size=800, edge_color='gray')
         plt.title("Connect Undirected graph")
         plt.show()
-
-
-    def shortPath(self, source, target):
-        if(source in self.nodes_list and target in self.nodes_list) :
-            path = nx.shortest_path(self.G, source = source, target = target)
-            return path
-
-        
-  

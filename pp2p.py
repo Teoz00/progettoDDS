@@ -1,5 +1,5 @@
+# ZeroMQ will be used for networking events and message exchange
 import zmq
-
 class PerfectPointToPointLink:
     def __init__(self, my_addr, peer_addr):
         # initial stuff
@@ -19,16 +19,21 @@ class PerfectPointToPointLink:
 
     def print_info(self):
         print("PP2P info: ", self.address, " - ", self.peer_addr)
+      
+    def get_peer_addr(self):
+        return self.peer_addr
         
+    # simply send information through the socket to the specified destination
     def send(self, msg):
-        self.send_socket.send_string(msg)
+        # print(f"i'm sending {msg}")
+        self.send_socket.send_string(str(msg))
     
     # handles receive operation
     def recv(self):
         try:
             msg = self.recv_socket.recv_string(zmq.NOBLOCK)
-            print("Received: ", msg)
+            # print("Received: ", msg)
             return msg
         except zmq.Again:
             return None
-    
+        

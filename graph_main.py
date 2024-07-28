@@ -1,7 +1,6 @@
 from graph_gen import Graph
 import sys
 
-
 # expected syntax: python graph_main.py <# nodes> <"term" or nothing>
 g = None
 
@@ -15,8 +14,12 @@ if(len(sys.argv) == 5):
         print(g.shortPath(int(sys.argv[3]), int(sys.argv[4])) ) 
         g.plot_graph()
         
-
-
+elif(len(sys.argv) == 6):
+    g = Graph(int(sys.argv[1]), None)
+    print(g.shortPath(int(sys.argv[3]), int(sys.argv[4])) ) 
+    g.send_msg(int(sys.argv[3]), int(sys.argv[4]), str(sys.argv[5]))
+    g.plot_graph()
+            
 elif(len(sys.argv) == 2):
     g = Graph(int(sys.argv[1]), None)
     g.plot_graph()
