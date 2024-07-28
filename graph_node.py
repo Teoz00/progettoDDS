@@ -20,6 +20,8 @@ class Node:
         n = len(neighbors)
         self.vectorClock = [0] * (n + 1)
         
+        self.stop_event = threading.Event()
+        
         # print(f"neighbors into {self.id} : {neighbors}")
         # print(self.id, " -> ", neighbors)
         
@@ -124,36 +126,31 @@ class Node:
             # receiver.bind(f"tcp://{self.address}:{port}")
             # print(f"starting listening at {self.address}:{port} ...")
             
-            while self.running:
+            while not self.stop_event.is_set():
                 message = link.recv()
     
-                if(message != None):
-                    print(f"\nNode {self.id} > ", end = '')
+                if message is not None:
+                    print(f"\nNode {self.id} > ", end='')
                     
                     reconstructed_payload = ast.literal_eval(message)
                     msg = reconstructed_payload[0]
                     shortPath = reconstructed_payload[1]
                     
-                    if(self.id == shortPath[-1]):
+                    if self.id == shortPath[-1]:
                         print(f"received {msg} from {shortPath[0]}")
-                        self.running = False
+                        self.stop_event.set()  # Stop all threads
                     else:
-                        print(f"forwaring {message} to {shortPath.index(self.id) + 1}")
-                        print(f"thread: {self.listener_threads[shortPath.index(self.id) + 1]}")
+                        print(f"forwarding {message} to {shortPath[shortPath.index(self.id) + 1]}")
                         self.send_to(shortPath[-1], msg, shortPath)
-                        self.running = False
-                                                            
-                # delay for reducing load to cpu, debugging purposes 
+                                    
                 time.sleep(2.0)
                 
-            return
-        
         except Exception as e:
             print(f"Catched: {e} while trying to listen at {self.id}:{link}")
             # print(f"Stacktrace::: {traceback.print_exc()}")
         finally:
             self.cleanup()
-
+          
     def handle_input(self):
         while self.running:
             command = input(f"Node {self.id} > ")
@@ -178,10 +175,11 @@ class Node:
         return self.neighbors
 
     def cleanup(self):
+        self.stop_event.set()
         # Set running to False to stop all threads
         self.running = False
         # Join all listener threads to ensure they have finished
-        #for thr in self.listener_threads.values():
+        # for thr in self.listener_threads.values():
         #    thr.join()
         # Close all links to release resources
         for link in self.links.values():
