@@ -2,6 +2,8 @@ import threading
 import traceback
 import time
 import ast
+import os
+import signal
 
 from pp2p import PerfectPointToPointLink
 
@@ -38,7 +40,7 @@ class Node:
             
             except Exception as e:
                 print(f"Catched: {e} while starting thread at {self.id}:{elem['neigh_port']}")
-                self.cleanup()
+                # self.cleanup()
 
                  
     def send_to(self, peer_id, msg, shortestPath):
@@ -135,13 +137,12 @@ class Node:
                     if(self.id == shortPath[-1]):
                         print(f"received {msg} from {shortPath[0]}")
                         self.running = False
-                        return
                     else:
                         print(f"forwaring {message} to {shortPath.index(self.id) + 1}")
+                        print(f"thread: {self.listener_threads[shortPath.index(self.id) + 1]}")
                         self.send_to(shortPath[-1], msg, shortPath)
                         self.running = False
-                                    
-                                        
+                                                            
                 # delay for reducing load to cpu, debugging purposes 
                 time.sleep(2.0)
                 
@@ -150,6 +151,8 @@ class Node:
         except Exception as e:
             print(f"Catched: {e} while trying to listen at {self.id}:{link}")
             # print(f"Stacktrace::: {traceback.print_exc()}")
+        finally:
+            self.cleanup()
 
     def handle_input(self):
         while self.running:
@@ -162,7 +165,7 @@ class Node:
                 self.running = False
             else:
                 print("Invalid command")
-                
+                                
     def get_neighbors(self):
         # list_neighbors = []
         # print(f"sizeof(links): {len(self.links)}")
@@ -178,8 +181,8 @@ class Node:
         # Set running to False to stop all threads
         self.running = False
         # Join all listener threads to ensure they have finished
-        for thr in self.listener_threads.values():
-            thr.join()
+        #for thr in self.listener_threads.values():
+        #    thr.join()
         # Close all links to release resources
         for link in self.links.values():
             link.close()

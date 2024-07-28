@@ -37,3 +37,7 @@ class PerfectPointToPointLink:
         except zmq.Again:
             return None
         
+    def close(self):
+        self.recv_socket.close()
+        self.send_socket.close()
+        self.context.term()

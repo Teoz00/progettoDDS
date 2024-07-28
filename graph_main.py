@@ -19,6 +19,9 @@ elif(len(sys.argv) == 6):
     print(g.shortPath(int(sys.argv[3]), int(sys.argv[4])) ) 
     g.send_msg(int(sys.argv[3]), int(sys.argv[4]), str(sys.argv[5]))
     g.plot_graph()
+    
+    for node in g.nodes.values():
+        node.cleanup()
             
 elif(len(sys.argv) == 2):
     g = Graph(int(sys.argv[1]), None)
