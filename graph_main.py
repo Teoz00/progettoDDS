@@ -1,5 +1,7 @@
 from graph_gen import Graph
 import sys
+import pyautogui
+import time
 
 # expected syntax: python graph_main.py <# nodes> <"term" or nothing>
 g = None
@@ -21,6 +23,8 @@ elif(len(sys.argv) == 6):
     # g.plot_graph()
 
     input("")
+    #time.sleep(1)
+    #pyautogui.press('enter') #TODO Asseggnarlo ad un altro thread
     
     for node in g.nodes.values():
         node.cleanup()

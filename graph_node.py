@@ -6,6 +6,7 @@ import os
 import signal
 
 from pp2p import PerfectPointToPointLink
+from event_process import EventP
 
 class Node:
     def __init__(self, my_id, my_addr, neighbors, all):
@@ -13,6 +14,7 @@ class Node:
         self.links = {}
         self.address = my_addr
         self.node_into_network = int(all)
+        self.event_set = []
         
         self.vectorClock = [0] * (self.node_into_network + 1)
         self.messageLog = []
@@ -61,10 +63,13 @@ class Node:
                     
                     if elem["neigh"] == peer_id:
                         # print(f"{self.id} - {elem["neigh"]}")
-                        # print("does exist? ", self.links[str(peer_id)])
+                        # print("does exist? ", self.links[str(peer_id)]
                         self.vectorClock[self.id] += 1
                         self.links[str(peer_id)].send([msg, shortestPath, self.vectorClock])
                         FOUND = True
+                        typeOf = "send"
+                        self.eventGenerating(msg, typeOf)
+                        #self.event_set[len(self.event_set) - 1]
                         break
                 
                 if FOUND == False:
@@ -86,6 +91,8 @@ class Node:
                             if elem["neigh"] == shortestPath[idx]: 
                                 self.vectorClock[self.id] += 1
                                 self.links[str(elem['neigh'])].send(str([msg, shortestPath, self.vectorClock]))
+                                typeOf = "send"
+                                self.eventGenerating(msg, typeOf)
                                 break
                     
                     # OLD IMPLEMENTATION
@@ -135,9 +142,11 @@ class Node:
                     reconstructed_payload = ast.literal_eval(message)
                     msg = reconstructed_payload[0]
                     shortPath = reconstructed_payload[1]
-                    vc = reconstructed_payload[2]
+                    vc = reconstructed_payload[2]  
 
                     self.manage_vector_clock(vc)
+                    typeOf = "receive"
+                    self.eventGenerating(msg, typeOf)
                     
                     if self.id == shortPath[-1]:
                         print(f"received {msg} from {shortPath[0]}")
@@ -147,6 +156,8 @@ class Node:
                         print(f"forwarding {message} to {shortPath[shortPath.index(self.id) + 1]}")
                         self.vectorClock[self.id] += 1
                         self.send_to(shortPath[-1], msg, shortPath)
+                        typeOf = "send"
+                        self.eventGenerating(msg, typeOf)
                                     
                 time.sleep(2.0)
                 
@@ -189,3 +200,7 @@ class Node:
         # Close all links to release resources
         for link in self.links.values():
             link.close()
+
+    def eventGenerating(self, msg, type):
+        self.event_set.append(EventP(type, len(self.event_set), self.vectorClock, msg))
+        #print(f"EventSet{self.id}:{self.event_set}")
