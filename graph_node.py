@@ -8,18 +8,18 @@ import signal
 from pp2p import PerfectPointToPointLink
 
 class Node:
-    def __init__(self, my_id, my_addr, neighbors):
+    def __init__(self, my_id, my_addr, neighbors, all):
         self.id = my_id
         self.links = {}
         self.address = my_addr
+        self.node_into_network = int(all)
+        
+        self.vectorClock = [0] * (self.node_into_network + 1)
         self.messageLog = []
+        
         self.neighbors = neighbors
         
         self.listener_threads = {}
-        
-        n = len(neighbors)
-        self.vectorClock = [0] * (n + 1)
-        
         self.stop_event = threading.Event()
         
         # print(f"neighbors into {self.id} : {neighbors}")
@@ -45,6 +45,11 @@ class Node:
                 # self.cleanup()
 
                  
+    def manage_vector_clock(self, vc):
+        for i in range(0, self.node_into_network):
+            if(self.vectorClock[i] < vc[i]):
+                self.vectorClock[i] = vc[i]
+        
     def send_to(self, peer_id, msg, shortestPath):
         try:
             if not(isinstance(peer_id, str)):      
@@ -57,7 +62,8 @@ class Node:
                     if elem["neigh"] == peer_id:
                         # print(f"{self.id} - {elem["neigh"]}")
                         # print("does exist? ", self.links[str(peer_id)])
-                        self.links[str(peer_id)].send([msg, shortestPath])
+                        self.vectorClock[self.id] += 1
+                        self.links[str(peer_id)].send([msg, shortestPath, self.vectorClock])
                         FOUND = True
                         break
                 
@@ -78,7 +84,8 @@ class Node:
                             #   element deletion from that variable (can be reused for ack of reception!!!)
                             
                             if elem["neigh"] == shortestPath[idx]: 
-                                self.links[str(elem['neigh'])].send(str([msg, shortestPath]))
+                                self.vectorClock[self.id] += 1
+                                self.links[str(elem['neigh'])].send(str([msg, shortestPath, self.vectorClock]))
                                 break
                     
                     # OLD IMPLEMENTATION
@@ -93,15 +100,6 @@ class Node:
             # print(f"Stacktrace::: {traceback.print_exc()}")
             # print(f"Impossible to send a message to specified peer - {e}")
     
-    # can be removed, not so useful...      
-    def recv_from(self):
-        for link in self.links:
-            packet = link.recv()
-            print("Received:", packet)
-            source = link["neigh"] 
-            shortestPath = self.links.keys().send()
-            peer_id = shortestPath[0]
-
     def spawn_terminal(self):
         self.running = True
         self.listener_thread = threading.Thread(target=self.listen_msg)
@@ -110,6 +108,7 @@ class Node:
         self.input_thread = threading.Thread(target=self.handle_input)
         self.input_thread.start()
 
+    # when is received a payload from a node, it reconstructs the internal element of the message
     def reconstruct_payload(s):
         parsed_message = ast.literal_eval(s)
 
@@ -119,6 +118,7 @@ class Node:
         print(f"msg: {msg}")
         print(f"shortPath: {shortPath}")
 
+    # for each of the link, it listens for possible incoming messages
     def listen_msg(self, link):
         try:
             # context = zmq.Context()
@@ -126,7 +126,7 @@ class Node:
             # receiver.bind(f"tcp://{self.address}:{port}")
             # print(f"starting listening at {self.address}:{port} ...")
             
-            while not self.stop_event.is_set():
+            while not(self.stop_event.is_set()):
                 message = link.recv()
     
                 if message is not None:
@@ -135,12 +135,17 @@ class Node:
                     reconstructed_payload = ast.literal_eval(message)
                     msg = reconstructed_payload[0]
                     shortPath = reconstructed_payload[1]
+                    vc = reconstructed_payload[2]
+
+                    self.manage_vector_clock(vc)
                     
                     if self.id == shortPath[-1]:
                         print(f"received {msg} from {shortPath[0]}")
-                        self.stop_event.set()  # Stop all threads
+                        self.vectorClock[self.id] += 1
+                        self.stop_event.set()  # send event for stopping threads
                     else:
                         print(f"forwarding {message} to {shortPath[shortPath.index(self.id) + 1]}")
+                        self.vectorClock[self.id] += 1
                         self.send_to(shortPath[-1], msg, shortPath)
                                     
                 time.sleep(2.0)
@@ -180,7 +185,7 @@ class Node:
         self.running = False
         # Join all listener threads to ensure they have finished
         # for thr in self.listener_threads.values():
-        #    thr.join()
+        #    thr.join() # not useful anymore due to stop event globally notified to each thread
         # Close all links to release resources
         for link in self.links.values():
             link.close()

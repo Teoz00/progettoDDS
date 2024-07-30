@@ -80,7 +80,7 @@ class Graph:
         # generates a terminal window for each node
         for node in detailed_node_list:
             # print((detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports']))
-            self.nodes[node] = Node(detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports'])
+            self.nodes[node] = Node(detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports'], num_nodes)
             
             # print(f"detailed_node_list[{node}]: {detailed_node_list[node]['ports']}")
             #print("neighbors in graph_gen.py: ", self.nodes[node].get_neighbors())
