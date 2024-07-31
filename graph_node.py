@@ -4,6 +4,7 @@ import time
 import ast
 import os
 import signal
+import uuid
 
 from pp2p import PerfectPointToPointLink
 from event_process import EventP
@@ -24,6 +25,11 @@ class Node:
         self.listener_threads = {}
         self.stop_event = threading.Event()
         
+        self.acks_received = {}
+        self.pending_acks = {}
+        self.ack_timeout = 10  # seconds to wait for an ack
+        self.ack_flags = {}  # to store ack status (True/False) of each message sent
+        self.message_sent_flags = {}  # to store sent status of each message
         # print(f"neighbors into {self.id} : {neighbors}")
         # print(self.id, " -> ", neighbors)
         
@@ -52,7 +58,7 @@ class Node:
             if(self.vectorClock[i] < vc[i]):
                 self.vectorClock[i] = vc[i]
         
-    def send_to(self, peer_id, msg, shortestPath):
+    def send_to(self, peer_id, msg, shortestPath, message_id=None):
         try:
             if not(isinstance(peer_id, str)):      
                 FOUND = False
@@ -65,10 +71,16 @@ class Node:
                         # print(f"{self.id} - {elem["neigh"]}")
                         # print("does exist? ", self.links[str(peer_id)]
                         self.vectorClock[self.id] += 1
-                        self.links[str(peer_id)].send([msg, shortestPath, self.vectorClock])
+                        if message_id is None:
+                            message_id = str(uuid.uuid4())  # Unique message ID
+                        self.links[str(peer_id)].send([msg, shortestPath, self.vectorClock, message_id])
                         FOUND = True
                         typeOf = "send"
                         self.eventGenerating(msg, typeOf)
+                        self.pending_acks[message_id] = (msg, shortestPath, peer_id, time.time())
+                        self.ack_flags[message_id] = False  # Initialize ack flag to False
+                        self.message_sent_flags[message_id] = True  # Mark message as sent
+                        #print(f"Node {self.id} sent message {msg} with ID {message_id} to {peer_id}")
                         #self.event_set[len(self.event_set) - 1]
                         break
                 
@@ -76,10 +88,8 @@ class Node:
                     idx = shortestPath.index(self.id) + 1
                     # print("idx:", idx)
                     
-                    if(idx == len(shortestPath)):
-                        print("Error with indexes!!")
-                    
-                    else:
+                    if(idx < len(shortestPath)):
+                        next_hop = shortestPath[idx]
                         for elem in self.neighbors:
                             # print(f'{self.id}: [searching NEAREST NEIGHBOR] {shortestPath[idx]} vs {elem["neigh"]} -> {elem["neigh"] == shortestPath[idx]}')
                 
@@ -88,11 +98,17 @@ class Node:
                             #   the index of object 'x' into it, so, this can be useful for avoiding
                             #   element deletion from that variable (can be reused for ack of reception!!!)
                             
-                            if elem["neigh"] == shortestPath[idx]: 
+                            if elem["neigh"] == next_hop: 
                                 self.vectorClock[self.id] += 1
-                                self.links[str(elem['neigh'])].send(str([msg, shortestPath, self.vectorClock]))
+                                if message_id is None:
+                                    message_id = str(uuid.uuid4())  # Unique message ID
+                                self.links[str(elem['neigh'])].send(str([msg, shortestPath, self.vectorClock,message_id]))
                                 typeOf = "send"
                                 self.eventGenerating(msg, typeOf)
+                                self.pending_acks[message_id] = (msg, shortestPath, elem['neigh'], time.time())
+                                self.ack_flags[message_id] = False  # Initialize ack flag to False
+                                self.message_sent_flags[message_id] = True  # Mark message as sent
+                                #print(f"Node {self.id} forwarded message {msg} with ID {message_id} to {elem['neigh']}")
                                 break
                     
                     # OLD IMPLEMENTATION
@@ -135,45 +151,60 @@ class Node:
             
             while not(self.stop_event.is_set()):
                 message = link.recv()
-    
                 if message is not None:
-                    print(f"\nNode {self.id} > ", end='')
-                    
-                    reconstructed_payload = ast.literal_eval(message)
-                    msg = reconstructed_payload[0]
-                    shortPath = reconstructed_payload[1]
-                    vc = reconstructed_payload[2]  
-
-                    self.manage_vector_clock(vc)
-                    typeOf = "receive"
-                    self.eventGenerating(msg, typeOf)
-                    
-                    if self.id == shortPath[-1]:
-                        print(f"received {msg} from {shortPath[0]}")
-                        self.vectorClock[self.id] += 1
-                        self.stop_event.set()  # send event for stopping threads
+                    if message.startswith("ack:"):
+                        message_id = message.split(":")[1]
+                        #Find the sending node
+                        sender_id = self.get_node_id_by_link(link)
+                        print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} received ack for message ID {message_id} from {sender_id}")
+                        self.handle_received_ack(message_id)
                     else:
-                        print(f"forwarding {message} to {shortPath[shortPath.index(self.id) + 1]}")
-                        self.vectorClock[self.id] += 1
-                        self.send_to(shortPath[-1], msg, shortPath)
-                        typeOf = "send"
+                        reconstructed_payload = ast.literal_eval(message)
+                        msg = reconstructed_payload[0]
+                        shortPath = reconstructed_payload[1]
+                        vc = reconstructed_payload[2]
+                        message_id = reconstructed_payload[3]
+
+                        self.manage_vector_clock(vc)
+                        typeOf = "receive"
                         self.eventGenerating(msg, typeOf)
+                        
+                        if self.id == shortPath[-1]:
+                            print(f"Node {self.id} received {msg} from {shortPath[0]}")
+                            self.vectorClock[self.id] += 1
+                            self.send_ack(link, message_id)
+                            self.stop_event.set()  # send event for stopping threads
+                            
+                        else:
+                            next_hop = shortPath[shortPath.index(self.id) + 1]
+                            print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} forwarding {message} to {next_hop}")
+                            self.vectorClock[self.id] += 1
+                            self.send_to(next_hop, msg, shortPath, message_id)  # Use the same message ID
+                            typeOf = "send"
+                            self.eventGenerating(msg, typeOf)
+                            
                                     
-                time.sleep(2.0)
+                time.sleep(0.5)
                 
         except Exception as e:
             print(f"Catched: {e} while trying to listen at {self.id}:{link}")
             # print(f"Stacktrace::: {traceback.print_exc()}")
         finally:
             self.cleanup()
-          
+    
+    def get_node_id_by_link(self, link):
+        for node_id, node_link in self.links.items():
+            if node_link == link:
+                return node_id
+        return "unknown" # If link not found, return default value
+     
     def handle_input(self):
         while self.running:
             command = input(f"Node {self.id} > ")
             if command.startswith("send"):
                 _, target_id, message = command.split(maxsplit=2)
                 target_id = int(target_id)
-                self.send_to(target_id, message)
+                self.send_to(target_id, message, shortestPath=[self.id, target_id])  # Provide shortestPath
             elif command == "exit":
                 self.running = False
             else:
@@ -204,3 +235,47 @@ class Node:
     def eventGenerating(self, msg, type):
         self.event_set.append(EventP(type, len(self.event_set), self.vectorClock, msg))
         #print(f"EventSet{self.id}:{self.event_set}")
+    
+    #function that sends an ack message
+    def send_ack(self, link, message_id):
+        ack_message = f"ack:{message_id}"
+        link.send(ack_message)
+    
+    #function that periodically checks for pending ACKs
+    def check_pending_acks(self):
+        current_time = time.time()
+        for message_id, (msg, shortestPath, peer_id, timestamp) in list(self.pending_acks.items()):
+            if current_time - timestamp > self.ack_timeout:
+                (f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Resending message {msg} to {peer_id}")
+                self.send_to(peer_id, msg, shortestPath, message_id)
+                self.pending_acks[message_id] = (msg, shortestPath, peer_id, current_time)
+    
+    #function that runs a continuous loop to check for pending ACKs
+    def check_pending_acks_loop(self):
+        while self.running:
+            self.check_pending_acks()
+            time.sleep(1)
+    
+    #Start the thread that runs check_pending_acks_loop:
+    def start_ack_checker(self):
+        self.ack_checker_thread = threading.Thread(target=self.check_pending_acks_loop)
+        self.ack_checker_thread.start()
+    
+    #function that manages received acks
+    def handle_received_ack(self, message_id):
+    # Check if the ack is for a pending message
+        if message_id in self.pending_acks:
+            (msg, shortestPath, peer_id, timestamp) = self.pending_acks[message_id]
+        
+            # Find the index of the current node in the path
+            index = shortestPath.index(self.id)
+        
+            # If the current node is not the first in the path
+            if index > 0:
+                # The previous node is the leftmost node in the path
+                next_hop = shortestPath[index - 1]
+            
+                # Send ack to previous node
+                self.send_ack(self.links[str(next_hop)], message_id)
+                print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} sending ack for message ID {message_id} to {next_hop}")
+                #print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} received ack from {peer_id} and sending ack to {next_hop} for message ID {message_id}")
