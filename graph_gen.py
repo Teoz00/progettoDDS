@@ -101,7 +101,17 @@ class Graph:
             # access the instance of Node for accessing "send" method ->
             # -> objects are into self.nodes!
             self.nodes[source].send_to(dest, msg, self.shortPath(source, dest))
-            
+
+    # function for obtaining vector clock of each node, debugging purposes
+    def get_matrix_clock(self):
+        print(" === MATRIX CLOCK === ")
+        for node in self.nodes:
+            print(f"{self.nodes[node].get_id()} : \t {self.nodes[node].get_vectorClock()}")            
+  
+    def get_message_logs(self):
+        print(" === MESSAGE LOGS === ")
+        for node in self.nodes:
+            print(f"{self.nodes[node].get_id()} : \t {self.nodes[node].get_msgLog()}")
   
     # plots the graph using matplotlib        
     def plot_graph(self):

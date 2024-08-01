@@ -10,12 +10,19 @@ class PerfectPointToPointLink:
         self.context = zmq.Context()
 
         # recv socket init
-        self.recv_socket = self.context.socket(zmq.PULL)
-        self.recv_socket.bind(f"tcp://{self.address}")
+        try:
+            self.recv_socket = self.context.socket(zmq.PULL)
+            self.recv_socket.bind(f"tcp://{self.address}")
+        except Exception as e:
+            print(f"Link {self.address} : catched '{e}' while binding with {self.peer_addr}")
 
         # send socket init
-        self.send_socket = self.context.socket(zmq.PUSH)
-        self.send_socket.connect(f"tcp://{self.peer_addr}")
+        try:
+            self.send_socket = self.context.socket(zmq.PUSH)
+            self.send_socket.connect(f"tcp://{self.peer_addr}")
+        except Exception as e:
+            print(f"Link {self.address}: catched '{e}' while connecting to {self.peer_addr}")
+
 
     def print_info(self):
         print("PP2P info: ", self.address, " - ", self.peer_addr)
@@ -38,6 +45,17 @@ class PerfectPointToPointLink:
             return None
         
     def close(self):
-        self.recv_socket.close()
-        self.send_socket.close()
-        self.context.term()
+        try:
+            self.recv_socket.close()
+        except Exception as e:
+            print(f"Link {self.address}: catched '{e}' while closing recv socket")
+        
+        try:
+            self.send_socket.close()
+        except Exception as e:
+            print(f"Link {self.address}: catched '{e}' while closing send socket")
+        
+        try:
+            self.context.term()
+        except Exception as e:
+            print(f"Link {self.address}: catched '{e}' while terminating context")

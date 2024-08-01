@@ -26,8 +26,12 @@ elif(len(sys.argv) == 6):
     #time.sleep(1)
     #pyautogui.press('enter') #TODO Asseggnarlo ad un altro thread
     
+    # g.get_matrix_clock()
+    # g.get_message_logs()
+    
     for node in g.nodes.values():
         node.cleanup()
+    
             
 elif(len(sys.argv) == 2):
     g = Graph(int(sys.argv[1]), None)
