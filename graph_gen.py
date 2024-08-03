@@ -61,7 +61,7 @@ class Graph:
         
         # generates, for each node, a list of info about neighbors, ports and ips
         for node in detailed_node_list:
-            for elem in detailed_node_list[node]['ports']:
+            for elem in detailed_node_list[node]['ports']:  
                 neigh_id = elem['neigh']
                 for neighbor in detailed_node_list[neigh_id]['ports']:
                     elem.update({"neigh_ip": ip})
@@ -119,3 +119,7 @@ class Graph:
         nx.draw(self.G, pos, with_labels=True, node_color='skyblue', node_size=800, edge_color='gray')
         plt.title("Connect Undirected graph")
         plt.show()
+
+
+    def firstBC(self, msg):
+        self.nodes[0].broadcast(msg)

@@ -32,6 +32,7 @@ class Node:
         self.message_sent_flags = {}  # to store sent status of each message
         # print(f"neighbors into {self.id} : {neighbors}")
         # print(self.id, " -> ", neighbors)
+        self.ackBC = {}
         
         for elem in neighbors:
             # print(my_addr + ":" + str(elem['port']), my_addr)
@@ -155,7 +156,7 @@ class Node:
 
     # for each of the link, it listens for possible incoming messages
     def listen_msg(self, link):
-        try:
+       # try:
             # context = zmq.Context()
             # receiver = context.socket(zmq.PULL)
             # receiver.bind(f"tcp://{self.address}:{port}")
@@ -199,23 +200,41 @@ class Node:
                             self.stop_event.set()  # send event for stopping threads
                             
                         else:
-                            next_hop = shortPath[shortPath.index(self.id) + 1]
-                            
-                            print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} forwarding {message} to {next_hop}")
-                            
+                            shortPathLen = len(shortPath)
                             self.vectorClock[self.id] += 1
-                            self.send_to(next_hop, msg, shortPath, message_id)  # Use the same message ID
-                            
+
+                            if shortPathLen == 1 :
+                               # print(f"ShortPath: {shortPath[0]}\n")
+                                if shortPath[0] != self.id:
+                                    self.ackBC[message_id] = {"msg":msg, "shortPath":shortPath, "neighbor": link.get_peer_addr(), "time":time.time(), "counter": 0}
+                                    threading.Thread(target = self.handleAckBC , args = (message_id , link))
+
+                                    for neigh in self.neighbors:
+                                        #print(f"neigh['neigh_ip']: {neigh['neigh_port']}\n")
+                                       # print(f"\tlink_peer_addr{type(link.get_peer_addr())}\tnigh_ip:{type(neigh['neigh']['neigh_ip'])}\tport:{type(neigh['neigh']['neigh_port'])}\n")
+                                        
+                                        if neigh["neigh"] != shortPath[0] and link.get_peer_addr() != neigh["neigh_ip"]+str(neigh["neigh_port"]):     
+                                            self.ack_flags[message_id] = False  # Initialize ack flag to False
+                                            self.message_sent_flags[message_id] = True  # Mark message as sent            
+                                            self.send_to(neigh["neigh"], "ack:"+msg, shortPath, message_id)
+                                            
+                                print(f"ACK for BC -->\t{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} forwarding {message} to {link.get_peer_addr()}")
+
+                            else:
+                                next_hop = shortPath[shortPath.index(self.id) + 1]                            
+                                print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} forwarding {message} to {next_hop}")
+                                self.send_to(next_hop, msg, shortPath, message_id)  # Use the same message ID
+                             
                             typeOf = "send"
                             self.eventGenerating(msg, typeOf)
                             
                 time.sleep(0.5)
                 
-        except Exception as e:
-            print(f"Catched: {e} while trying to listen at {self.id}:{link}")
+      #  except Exception as e:
+        #    print(f"Catched: {e} while trying to listen at {self.id}:{link}")
             # print(f"Stacktrace::: {traceback.print_exc()}")
-        finally:
-            self.cleanup()
+        #finally:
+         #   self.cleanup()
     
     def get_id(self):
         return self.id
@@ -302,14 +321,35 @@ class Node:
             (msg, shortestPath, peer_id, timestamp) = self.pending_acks[message_id]
         
             # Find the index of the current node in the path
-            index = shortestPath.index(self.id)
-        
-            # If the current node is not the first in the path
-            if index > 0:
-                # The previous node is the leftmost node in the path
-                next_hop = shortestPath[index - 1]
+            if len(shortestPath) > 1:
+                index = shortestPath.index(self.id)
             
-                # Send ack to previous node
-                self.send_ack(self.links[str(next_hop)], message_id)
-                print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} sending ack for message ID {message_id} to {next_hop}")
-                #print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} received ack from {peer_id} and sending ack to {next_hop} for message ID {message_id}")
+                # If the current node is not the first in the path
+                if index > 0:
+                    # The previous node is the leftmost node in the path
+                    next_hop = shortestPath[index - 1]
+                
+                    # Send ack to previous node
+                    self.send_ack(self.links[str(next_hop)], message_id)
+                    print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} sending ack for message ID {message_id} to {next_hop}")
+                    #print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} received ack from {peer_id} and sending ack to {next_hop} for message ID {message_id}")
+           
+        
+    def handleAckBC(self, message_id, link): #NB message_id is a string or int 
+        #TODO timeout implementation for ack waiting assigned to other threads
+        while self.ackBC[message_id]["counter"] < len(self.neighbors):
+            time.sleep(0.5)
+        
+        self.send_ack(link , message_id)  
+
+    def broadcast(self, msg):
+        #"""Broadcasts a message to all neighbors."""
+        self.vectorClock[self.id] += 1
+        shortestPath = [self.id]  # Start the path with the current node's ID -- good for ACK
+        for neighbor in self.neighbors:
+            try:
+                if(neighbor["neigh"] != self.id):
+                    self.send_to(neighbor["neigh"], msg, shortestPath)
+                    print(f"{self.id} : ShortestPath --> {shortestPath} / {neighbor}")
+            except Exception as e:
+                print(f"Failed to send to neighbor {neighbor['neigh']}: {e}")

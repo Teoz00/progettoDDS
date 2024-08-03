@@ -19,9 +19,10 @@ if(len(sys.argv) == 5):
 elif(len(sys.argv) == 6):
     g = Graph(int(sys.argv[1]), None)
     print(g.shortPath(int(sys.argv[3]), int(sys.argv[4])) ) 
-    g.send_msg(int(sys.argv[3]), int(sys.argv[4]), str(sys.argv[5]))
-    # g.plot_graph()
+   # g.send_msg(int(sys.argv[3]), int(sys.argv[4]), str(sys.argv[5]))
 
+    g.firstBC("Ciao a tutti sono per il BC")
+    g.plot_graph()
     input("")
     #time.sleep(1)
     #pyautogui.press('enter') #TODO Asseggnarlo ad un altro thread

@@ -1,6 +1,10 @@
 from pp2p import PerfectPointToPointLink
 import sys
 
+def mySet(msgLog): #If too slow, try with hash table else if not working try with custom append (linear)
+    msg = set()
+    return [x for x in msgLog if not (x in msg or msg.add(x))] 
+
 if len(sys.argv) != 3:
     print("There are some issues with user input")
     sys.exit(1)
@@ -17,6 +21,7 @@ try:
         msg = input("Insert message to send: ")
         if(msg != None and msg != 'exit' and msg != ''):
             messageLog.append(msg)
+            messageLog = mySet(messageLog) 
         if(msg):
             
             pl.send(msg)
@@ -29,6 +34,8 @@ try:
         msg = pl.recv()
         if(msg != None and msg != 'exit' and msg != ''):
             messageLog.append(msg)
+            messageLog = mySet(messageLog)
+
         if(msg == "exit"):
             break
  
