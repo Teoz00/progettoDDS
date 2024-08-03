@@ -13,3 +13,9 @@ Detecting Causality in the Presence of Byzantine Processes
 
 
 ###OPTIONAL: review graph init assigning of tcp ports for nodes connections since there might be some issues 
+
+#git branch
+#git checkout "nome_branch"
+#git branch 
+#git add . -> git commit -m "msg(con virgolette)" -> git push origin "nome branch"
+#git pull origin "nome branch"
