@@ -1,9 +1,6 @@
 import threading
-import traceback
 import time
 import ast
-import os
-import signal
 import uuid
 
 from pp2p import PerfectPointToPointLink
@@ -12,21 +9,31 @@ from event_process import EventP
 class Node:
     def __init__(self, my_id, my_addr, neighbors, all):
         self.id = my_id
+        
+        # it contains all pp2p links needed for communicating with neighbors, dictionary
         self.links = {}
         self.address = my_addr
         self.node_into_network = int(all)
+        
+        # list of events happened during the execution
         self.event_set = []
         
         self.vectorClock = [0] * (self.node_into_network)
+        
+        # list of messages received during the execution
         self.messageLog = []
         
+        # list of dictionaries
         self.neighbors = neighbors
         
+        # dictionary containing all threads used for listening messages
         self.listener_threads = {}
         self.stop_event = threading.Event()
         
         self.acks_received = {}
-        self.pending_acks = {"ACK":{} , "ACK_BC": {}}
+        self.pending_acks = {"ACK":{}}
+        self.pending_fwd_acks = {}
+        
         self.ack_timeout = 10  # seconds to wait for an ack
         self.ack_flags = {}  # to store ack status (True/False) of each message sent
         self.message_sent_flags = {}  # to store sent status of each message
@@ -60,9 +67,11 @@ class Node:
         for i in range(0, self.node_into_network):
             if(self.vectorClock[i] < vc[i]):
                 self.vectorClock[i] = vc[i]
-        
-    def send_to(self, type, peer_id, msg, shortestPath, message_id=None):
-        try:
+    
+    def send_to(self, type, peer_id, msg, shortestPath, message_id, origin):
+        # try:
+            print(f"Node {self.id} > sending [{type, peer_id, msg, shortestPath, message_id, origin}] to {peer_id}")
+            self.messageLog.append((type, peer_id, msg, shortestPath, message_id, origin))
             if not(isinstance(peer_id, str)):      
                 FOUND = False
                 for elem in self.neighbors:
@@ -79,14 +88,34 @@ class Node:
                             message_id = str(uuid.uuid4())  # Unique message ID
                         
                         match type:
-                            case "ACK", "ACK_BC":
-                                self.links[str(peer_id)].send([msg, type, shortestPath, self.vectorClock, message_id])
+                            
+                            case "ACK":
+                                self.links[str(peer_id)].send([type, msg, shortestPath, self.vectorClock, message_id])
+                                #self.pending_acks[type].update({message_id:0})
+                                
+                            case "ACK_BC":
+                                # print(f"send {type, msg, shortestPath, self.vectorClock, message_id} to {peer_id}")
+                                # print("message_id riga 92: ", message_id)
+                                #print("pending_fwd_acks: ", self.pending_fwd_acks[message_id])
+                                # for elem in self.pending_fwd_acks[str(message_id)]:
+                                #     print(f"Node {self.id} - {elem} > sending ACK_BC...")
+                                #     if(elem["node"] == peer_id):
+                                # elem.update({"node": peer_id, "status": True})    
+                                self.links[str(peer_id)].send([type, msg, shortestPath, self.vectorClock, message_id, origin])
+                                
                                 #self.pending_acks[type].update({message_id:0})
                             case "BC":
-                                self.links[str(peer_id)].send([msg, "BC", shortestPath, self.vectorClock, message_id])
-                                self.pending_acks["ACK_BC"].update({message_id:0})
+                                if (origin == None):
+                                    origin = self.id
+                                
+                                self.pending_fwd_acks[message_id].append({"node": peer_id, "status": False})    
+                                self.links[str(peer_id)].send(["BC", msg, shortestPath, self.vectorClock, message_id, origin])                                
+                                
                             case "SIMPLE":
-                                self.links[str(peer_id)].send([msg, "SIMPLE", shortestPath, self.vectorClock, message_id])
+                                self.links[str(peer_id)].send(["SIMPLE", msg, shortestPath, self.vectorClock, message_id])
+                                
+                                # here it is not needed the "origin" field since it is possible to retrieve it from shortestPath and is needed
+                                # only one ack!
                                 self.pending_acks["ACK"].update({message_id:0})
                         
                         FOUND = True
@@ -103,38 +132,46 @@ class Node:
                 
                 if FOUND == False:
                     if len(shortestPath) == 1:
-                        self.sendMsgBC(msg)
+                        print("This should be not possible to be reached")
+                        
+                        # this case may not be possible to be reached because of implementation constraints
+                        # self.sendMsgBC(msg) ### WARNING! It will generate an infinite loop of recursions!!!
                     else:
                         idx = shortestPath.index(self.id) + 1
                     # print("idx:", idx)
                     
-                    if(idx < len(shortestPath)):
-                        next_hop = shortestPath[idx]
-                        for elem in self.neighbors:
-                            # print(f'{self.id}: [searching NEAREST NEIGHBOR] {shortestPath[idx]} vs {elem["neigh"]} -> {elem["neigh"] == shortestPath[idx]}')
-                
-                            # DIFFERENT WAY TO MOVE INTO 'shortestPath' variable:
-                            #   using the method 'index[x]' it can be possible to find
-                            #   the index of object 'x' into it, so, this can be useful for avoiding
-                            #   element deletion from that variable (can be reused for ack of reception!!!)
-                            
-                            if elem["neigh"] == next_hop: 
-                                self.vectorClock[self.id] += 1
-                                
-                                if message_id is None:
-                                    message_id = str(uuid.uuid4())  # Unique message ID
-                                
-                                self.links[str(elem['neigh'])].send(str([msg, shortestPath, self.vectorClock, message_id]))
-                                
-                                typeOf = "send"
-                                self.eventGenerating(msg, typeOf)
-                                
-                                self.pending_acks[message_id] = (msg, shortestPath, elem['neigh'], time.time())
-                                self.ack_flags[message_id] = False  # Initialize ack flag to False
-                                self.message_sent_flags[message_id] = True  # Mark message as sent
-                                #print(f"Node {self.id} forwarded message {msg} with ID {message_id} to {elem['neigh']}")
-                                break
+                        if(idx < len(shortestPath)):
+                            next_hop = shortestPath[idx]
+                            for elem in self.neighbors:
+                                # print(f'{self.id}: [searching NEAREST NEIGHBOR] {shortestPath[idx]} vs {elem["neigh"]} -> {elem["neigh"] == shortestPath[idx]}')
                     
+                                # DIFFERENT WAY TO MOVE INTO 'shortestPath' variable:
+                                #   using the method 'index[x]' it can be possible to find
+                                #   the index of object 'x' into it, so, this can be useful for avoiding
+                                #   element deletion from that variable (can be reused for ack of reception!!!)
+                                
+                                if elem["neigh"] == next_hop: 
+                                    self.vectorClock[self.id] += 1
+                                    
+                                    if message_id is None:
+                                        message_id = str(uuid.uuid4())  # Unique message ID
+                                    
+                                    self.links[str(elem['neigh'])].send(str([type, msg, shortestPath, self.vectorClock, message_id]))
+                                    
+                                    typeOf = "send-" + type
+                                    self.eventGenerating(msg, typeOf)
+                                    
+                                    self.pending_acks["ACK"].update({message_id:0})
+                                    
+                                    # self.pending_acks[message_id] = (msg, shortestPath, elem['neigh'], time.time())
+                                    # self.ack_flags[message_id] = False  # Initialize ack flag to False
+                                    # self.message_sent_flags[message_id] = True  # Mark message as sent
+                                    
+                                    #print(f"Node {self.id} forwarded message {msg} with ID {message_id} to {elem['neigh']}")
+                                    typeOf = "send-" + type
+                                    self.eventGenerating(msg, typeOf)
+                                    break
+                        
                     # OLD IMPLEMENTATION
                     # for elem in self.neighbors:
                     #     print(f'{self.id}: [searching NEAREST NEIGHBOR] {shortestPath[]} vs {elem["neigh"]} -> {elem["neigh"] == shortestPath[0]}')
@@ -142,8 +179,8 @@ class Node:
                     #         shortestPath.pop(0)
                     #         self.links[str(elem['neigh'])].send(str([msg, shortestPath]))
                 
-        except Exception as e:
-            print(f"\tRaised: {e}")
+        # except Exception as e:
+        #     print(f"\tRaised: {e}")
             # print(f"Stacktrace::: {traceback.print_exc()}")
             # print(f"Impossible to send a message to specified peer - {e}")
     
@@ -155,19 +192,9 @@ class Node:
         self.input_thread = threading.Thread(target=self.handle_input)
         self.input_thread.start()
 
-    # when is received a payload from a node, it reconstructs the internal element of the message
-    def reconstruct_payload(s):
-        parsed_message = ast.literal_eval(s)
-
-        msg = parsed_message[0]
-        shortPath = parsed_message[1]
-
-        print(f"msg: {msg}")
-        print(f"shortPath: {shortPath}")
-
     # for each of the link, it listens for possible incoming messages
     def listen_msg(self, link):
-        try:
+        #try:
             # context = zmq.Context()
             # receiver = context.socket(zmq.PULL)
             # receiver.bind(f"tcp://{self.address}:{port}")
@@ -177,8 +204,101 @@ class Node:
                 message = link.recv()
                 
                 if message is not None:
+                    print(f"Node {self.id} > recv {message}")
                     self.messageLog.append(message)
                     
+                    reconstructed_payload = ast.literal_eval(message)
+                    
+                    type = reconstructed_payload[0]
+                    if type not in {"ACK", "ACK_BC", "SIMPLE", "BC"}:
+                        print("Invalid message!!")
+                        return
+                    
+                    msg = reconstructed_payload[1]
+                    shortPath = reconstructed_payload[2]
+                    vc = reconstructed_payload[3]
+                    message_id = reconstructed_payload[4]
+                    
+                    self.manage_vector_clock(vc)
+                    self.vectorClock[self.id] += 1
+                    
+                    typeOf = "receive-" + type
+                    self.eventGenerating(msg, typeOf)
+                    
+                    # wide usage of switch-case pattern for recognise type of message listened
+                    match type:
+                        
+                        # case for simple message to send to a certain node, it behaves as usual
+                        case "SIMPLE":
+                            
+                            if(self.id != shortPath[-1]):
+                                next_hop = shortPath[shortPath.index(self.id) + 1]
+                                print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} forwarding {message} to {next_hop}")
+                                self.send_to(type, next_hop, msg, shortPath, message_id, shortPath[0])
+                            
+                            else:
+                                shortPath = shortPath[::-1]
+                                self.send_to("ACK", shortPath[shortPath.index(self.id) + 1], msg, shortPath, message_id, shortPath[0])
+                            
+                        # case of broadcast message: it searches the neighbor and it will send to it the msg, otherwise it broacasts it
+                        case "BC":
+                            origin = reconstructed_payload[5]
+                            peer_id = 0
+                            for elem in self.neighbors:
+                                # print(f"found: {self.links[str(elem['neigh'])]} vs {link}")
+                                if(self.links[str(elem["neigh"])] == link):
+                                    peer_id = elem["neigh"]
+                            
+                            self.sendMsgBC(msg, message_id, origin, peer_id)
+                            # print(f"{self.id} sends to {len(self.neighbors)} nodes")
+                            
+                        # case for ack for broadcast: update status for neighbor that sends ack then check if it has received all acks needed
+                        case "ACK_BC":
+                            # print("received an ACK_BC")
+                            peer_id = self.get_node_id_by_link(link)
+                            FOUND = False
+                            
+                            for elem in self.pending_fwd_acks[message_id]:
+                                # print(f"Node {self.id} -> {int(elem['node'])} == {int(peer_id)} : {int(elem['node']) == int(peer_id)}")
+                                if(int(elem["node"]) == int(peer_id)):
+                                    FOUND = True
+                                    elem.update({"status": True})
+                                    print(f"\nNode {self.id} > pending_fwd_acks[{message_id}] : {self.pending_fwd_acks[message_id]}\n")
+        
+                            if(not FOUND):
+                                print("Something wrong")
+                                return
+
+                            origin = reconstructed_payload[5]
+                            
+                            if(self.check_pending_acks_customized(message_id)):
+                                if(origin == self.id):
+                                    self.termination_print()
+                                    self.stop_event.set()
+                                else:
+                                    # print("pending[message_id][fwd]: ", self.pending_acks[message_id]["fwd"])
+                                    self.send_to(type, self.pending_acks[message_id]["fwd"], msg, [self.id], message_id, origin)
+                            else:
+                                print("TBD")
+                                pass
+                                # self.sendMsgBC(msg, message_id, origin, shortPath)
+                                
+                        # case for simple msg ack: simply check the node to forward the ack
+                        case "ACK":
+                            if(shortPath[-1] == self.id):
+                                self.stop_event.set()
+                            else:
+                                next_hop = shortPath[shortPath.index(self.id) + 1]
+                            
+                                print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} forwarding {message} to {next_hop}")
+                                
+                                self.vectorClock[self.id] += 1
+                                self.send_to(type, next_hop, msg, shortPath, message_id, shortPath[0])  # Use the same message ID
+                                
+                                # typeOf = "send"
+                                # self.eventGenerating(msg, typeOf)
+                            
+                    """
                     if message.startswith("ack:"):
                         message_id = message.split(":")[1]
                 
@@ -220,14 +340,15 @@ class Node:
                             
                             typeOf = "send"
                             self.eventGenerating(msg, typeOf)
+                    """
                             
-                time.sleep(0.5)
+                time.sleep(0.1)
                 
-        except Exception as e:
-            print(f"Catched: {e} while trying to listen at {self.id}:{link}")
-            # print(f"Stacktrace::: {traceback.print_exc()}")
-        finally:
-            self.cleanup()
+        # except Exception as e:
+        #     print(f"Catched: {e} while trying to listen at {self.id}:{link}")
+        #     # print(f"Stacktrace::: {traceback.print_exc()}")
+        # finally:
+        #     self.cleanup()
     
     def get_id(self):
         return self.id
@@ -257,14 +378,6 @@ class Node:
                 print("Invalid command")
                                 
     def get_neighbors(self):
-        # list_neighbors = []
-        # print(f"sizeof(links): {len(self.links)}")
-        
-        # for elem in self.links:
-        #     list_neighbors.append(elem)
-        #     print(self.links[elem]['port'])
-        # print(f"list_neighbors: {list_neighbors}")
-        
         return self.neighbors
 
     def cleanup(self):
@@ -278,6 +391,7 @@ class Node:
         for link in self.links.values():
             link.close()
 
+    # generates event for msg with specified type
     def eventGenerating(self, msg, type):
         self.event_set.append(EventP(type, len(self.event_set), self.vectorClock, msg))
         #print(f"EventSet{self.id}:{self.event_set}")
@@ -296,6 +410,30 @@ class Node:
                 self.send_to(peer_id, msg, shortestPath, message_id)
                 self.pending_acks[message_id] = (msg, shortestPath, peer_id, current_time)
     
+    # check pensing acks for broadcast
+    def check_pending_acks_customized(self, message_id):
+        cnt = 0
+        # print("controllo le acks...")
+        # print(f"{message_id} è in pending_fwd_acks? {message_id in self.pending_fwd_acks}")
+        # print(self.pending_fwd_acks[message_id])
+        if message_id in self.pending_fwd_acks:
+            for elem in self.pending_fwd_acks[message_id]:
+                # print(f"Key: {node}, Value: {status}")
+                # for elem in self.pending_fwd_acks[message_id]:
+                # print(node, status)
+                # print(elem)
+                if(elem["status"] == False):
+                    # print("returning F")
+                    return False
+                cnt += 1
+            # print(f"Node {self.id} > #acks for {message_id}: {cnt}")
+            # print("returning T")
+            return True
+        
+        # print("returning F")
+        return False
+        
+    
     #function that runs a continuous loop to check for pending ACKs
     def check_pending_acks_loop(self):
         while self.running:
@@ -308,24 +446,62 @@ class Node:
         self.ack_checker_thread.start()
     
     #function that manages received acks
-    def handle_received_ack(self, message_id):
+    def handle_received_ack(self,type, message_id, shortPath):
     # Check if the ack is for a pending message
-        if message_id in self.pending_acks:            
-            (msg, shortestPath, peer_id, timestamp) = self.pending_acks[message_id]
-        
-            # Find the index of the current node in the path
-            index = shortestPath.index(self.id)
-        
-            # If the current node is not the first in the path
-            if index > 0:
-                # The previous node is the leftmost node in the path
-                next_hop = shortestPath[index - 1]
+        if message_id in self.pending_acks[type]:            
+            cnt = self.pending_acks[type][message_id]
             
-                # Send ack to previous node
-                self.send_ack(self.links[str(next_hop)], message_id)
-                print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} sending ack for message ID {message_id} to {next_hop}")
-                #print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} received ack from {peer_id} and sending ack to {next_hop} for message ID {message_id}")
+            if(cnt == len(self.neighbors)):
+                print("I'm lost :_( ")
+                ## self.send_to("ACK_BC", shortestPath[0], ms)
+            
+            # (msg, shortestPath, peer_id, timestamp) = self.pending_acks[message_id]
+        
+            # # Find the index of the current node in the path
+            # index = shortestPath.index(self.id)
+        
+            # # If the current node is not the first in the path
+            # if index > 0:
+            #     # The previous node is the leftmost node in the path
+            #     next_hop = shortestPath[index - 1]
+            
+            #     # Send ack to previous node
+            #     self.send_ack(self.links[str(next_hop)], message_id)
+            #     print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} sending ack for message ID {message_id} to {next_hop}")
+            #     #print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} received ack from {peer_id} and sending ack to {next_hop} for message ID {message_id}")
 
-    def sendMsgBC(self, msg):
+    # function that sends a message generated by an origin
+    def sendMsgBC(self, msg, msg_id, origin, sp):
+        type = "BC"
+        self.pending_acks[msg_id] = {"origin": origin, "fwd": sp}
+        some_neighbors_exists = False
+                
+        self.pending_fwd_acks[msg_id] = []
+                
         for neigh in self.neighbors:
-            self.send_to(neigh["neigh"], msg, [self.id])
+            # print(f"{neigh['neigh']} != {origin} --> {(neigh['neigh'] != origin)}")
+            # print(f"{neigh['neigh']} != {sp} --> {neigh['neigh'] != sp}\n")
+            if(neigh["neigh"] != origin and neigh["neigh"] != sp):
+                some_neighbors_exists = True
+                self.send_to(type, neigh["neigh"], msg, [self.id], msg_id, origin)
+                
+        
+        print(f"\nNode {self.id} > waiting for {self.pending_fwd_acks}\n")
+        
+        if(not(some_neighbors_exists)):
+            print(f"Node {self.id} > no neighbor to send ")
+            #if(not(self.check_pending_acks_customized(msg_id))):
+            self.send_to("ACK_BC", sp, msg, self.id, msg_id, origin)
+                # self, type, peer_id, msg, shortestPath, message_id, origin
+    
+    # prints vc, ml and es for debugging purposes          
+    def termination_print(self):
+        print("Vector clock: ", self.vectorClock)
+        
+        print("Message log: ")
+        for elem in self.messageLog:
+            print("\t", elem)
+        
+        print("Event set: ")
+        for elem in self.event_set:
+            print(f"\t[type: {elem.get_type()}, index: {elem.get_index()}, ts: {elem.get_ts()}]")

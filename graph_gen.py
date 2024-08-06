@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 import os
+import uuid
 
 # from dijkstra import Dijkstra
 from graph_node import Node
@@ -100,7 +101,7 @@ class Graph:
         if(source in self.nodes_list and dest in self.nodes_list):
             # access the instance of Node for accessing "send" method ->
             # -> objects are into self.nodes!
-            self.nodes[source].send_to(dest, msg, self.shortPath(source, dest))
+            self.nodes[source].send_to("SIMPLE", dest, msg, self.shortPath(source, dest), None, source)
 
     # function for obtaining vector clock of each node, debugging purposes
     def get_matrix_clock(self):
@@ -119,3 +120,10 @@ class Graph:
         nx.draw(self.G, pos, with_labels=True, node_color='skyblue', node_size=800, edge_color='gray')
         plt.title("Connect Undirected graph")
         plt.show()
+        
+    # devoloping purposes function
+    def first_BC_send(self):
+        self.nodes[0].sendMsgBC("CIAO", str(uuid.uuid4()), 0, 0)
+
+    def BC_send(self, node_id, msg):
+        self.nodes[node_id].sendMsgBC(msg, str(uuid.uuid4()), node_id, [node_id])

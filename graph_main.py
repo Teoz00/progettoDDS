@@ -3,10 +3,49 @@ import sys
 import pyautogui
 import time
 
-# expected syntax: python graph_main.py <# nodes> <"term" or nothing>
+#
+#                                                       | send source dest msg
+# expected syntax: python/python3 graph_main.py #nodes -| bc source msg
+#                                                       | ...
+#
+
 g = None
 
+l = len(sys.argv)
+
+match l:
+    case 5:
+        cmd = sys.argv[2]
+        match cmd:
+            case "bc":
+                g = Graph(int(sys.argv[1]), None)
+                # g.plot_graph()
+                g.BC_send(int(sys.argv[3]), sys.argv[4])
+                
+                input("")
+                
+                for node in g.nodes.values():
+                    node.cleanup()
+    
+    case 6:
+        cmd = sys.argv[2]
+        match cmd:
+            case "send":
+                g = Graph(int(sys.argv[1]), None)
+                # g.plot_graph()
+                
+                print("shortest path:", g.shortPath(int(sys.argv[3]), int(sys.argv[4])) )
+                g.send_msg(int(sys.argv[3]), int(sys.argv[4]), str(sys.argv[5]))
+                
+                input("")
+                
+                for node in g.nodes.values():
+                    node.cleanup()
+            
+                
+"""
 if(len(sys.argv) == 5):
+    cmd = str(sys.argv[2])
     if(str(sys.argv[2]) == "term"):
         g = Graph(int(sys.argv[1]), "term")
         g.plot_graph()
@@ -19,8 +58,10 @@ if(len(sys.argv) == 5):
 elif(len(sys.argv) == 6):
     g = Graph(int(sys.argv[1]), None)
     print(g.shortPath(int(sys.argv[3]), int(sys.argv[4])) ) 
-    g.send_msg(int(sys.argv[3]), int(sys.argv[4]), str(sys.argv[5]))
-    # g.plot_graph()
+    # g.send_msg(int(sys.argv[3]), int(sys.argv[4]), str(sys.argv[5]))
+
+    g.plot_graph()
+    g.first_BC_send()
 
     input("")
     #time.sleep(1)
@@ -40,3 +81,4 @@ elif(len(sys.argv) == 2):
 
 else:
     print("Invalid input")
+"""
