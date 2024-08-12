@@ -127,3 +127,6 @@ class Graph:
 
     def BC_send(self, node_id, msg):
         self.nodes[node_id].sendMsgBC(msg, str(uuid.uuid4()), node_id, [node_id])
+        
+    def specialBC(self, origin, msg):
+        self.nodes[origin].specialBC_Node(msg)

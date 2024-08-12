@@ -26,7 +26,16 @@ match l:
                 
                 for node in g.nodes.values():
                     node.cleanup()
-    
+            case "special_bc":
+                g = Graph(int(sys.argv[1]), None)
+                g.plot_graph()
+                g.specialBC(int(sys.argv[3]), sys.argv[4])
+                
+                input("")
+                
+                for node in g.nodes.values():
+                    node.cleanup()
+            
     case 6:
         cmd = sys.argv[2]
         match cmd:
