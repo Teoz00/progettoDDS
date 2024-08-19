@@ -14,44 +14,73 @@ g = None
 l = len(sys.argv)
 
 match l:
+    case 3:
+        match sys.argv[2]:
+            case 'test':
+                g = Graph(int(sys.argv[1]), 0.3)
+                g.specialBC(int(int(sys.argv[1]) / 2), 'test')
+                print("\n")
+                g.pfd_test(int(0))
+                print("\n")
+                g.specialBC(int(0), 'test')
+    case 4:
+        match sys.argv[2]:
+            case 'pfd':
+                g = Graph(int(sys.argv[1]), None)
+                g.plot_graph()
+                g.pfd_test(int(sys.argv[3]))
+                
+                # input("")
+                
+                # for node in g.nodes.values():
+                #     node.cleanup()
+        
+        
     case 5:
         cmd = sys.argv[2]
         match cmd:
-            case "bc":
+            case 'bc':
                 g = Graph(int(sys.argv[1]), None)
-                # g.plot_graph()
+                g.plot_graph()
                 g.BC_send(int(sys.argv[3]), sys.argv[4])
                 
-                input("")
+                # input("")
                 
-                for node in g.nodes.values():
-                    node.cleanup()
-            case "special_bc":
+                # for node in g.nodes.values():
+                #     node.cleanup()
+            
+            case 'special_bc':
                 g = Graph(int(sys.argv[1]), None)
                 g.plot_graph()
                 g.specialBC(int(sys.argv[3]), sys.argv[4])
                 
-                input("")
+                # input("")
                 
-                for node in g.nodes.values():
-                    node.cleanup()
+                # for node in g.nodes.values():
+                #     node.cleanup()
             
     case 6:
         cmd = sys.argv[2]
         match cmd:
-            case "send":
+            case 'send':
                 g = Graph(int(sys.argv[1]), None)
-                # g.plot_graph()
+                g.plot_graph()
                 
                 print("shortest path:", g.shortPath(int(sys.argv[3]), int(sys.argv[4])) )
                 g.send_msg(int(sys.argv[3]), int(sys.argv[4]), str(sys.argv[5]))
                 
-                input("")
+                # input("")
                 
-                for node in g.nodes.values():
-                    node.cleanup()
+                # for node in g.nodes.values():
+                #     node.cleanup()
             
+input("")
+
+g.stop_event.set()
                 
+for node in g.nodes.values():
+    node.cleanup()
+    
 """
 if(len(sys.argv) == 5):
     cmd = str(sys.argv[2])

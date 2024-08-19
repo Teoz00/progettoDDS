@@ -4,33 +4,35 @@ import numpy as np
 import time
 import os
 import uuid
+from threading import Event
 
 # from dijkstra import Dijkstra
 from graph_node import Node
 
 # MODIFY graph_main.py FOR OBTAINING RESULTS!
 
-class NodeTerm:
-    def __init__(self, node):
-        self.node = node
+# class NodeTerm:
+#     def __init__(self, node):
+#         self.node = node
 
-    def open_terminal(self):
-        neighbors = self.node.get_neighbors()
-        print(neighbors)
-        command = f'gnome-terminal -- bash -c "python3 node_term.py {self.node.id} {self.node.address} {neighbors}; exec bash"'
-        os.system(command)
+#     def open_terminal(self):
+#         neighbors = self.node.get_neighbors()
+#         print(neighbors)
+#         command = f'gnome-terminal -- bash -c "python3 node_term.py {self.node.id} {self.node.address} {neighbors}; exec bash"'
+#         os.system(command)
 
 class Graph:
     def __init__(self, num_nodes, option):
         self.nodes = {}
         
         # generates a random minimally connected graph network
-        self.G = nx.random_tree(num_nodes)
+        # self.G = nx.random_tree(num_nodes)
+        self.G = nx.erdos_renyi_graph(n=num_nodes, p=0.5, seed=43)
         
-        while not nx.is_connected(self.G):
-            (u, v) = (np.random.randint(0, num_nodes), np.random.randint(0, num_nodes))
-            if u != v and not self.G.has_edge(u, v):
-                self.G.add_edge(u, v)
+        # while not nx.is_connected(self.G):
+        #     (u, v) = (np.random.randint(0, num_nodes), np.random.randint(0, num_nodes))
+        #     if u != v and not self.G.has_edge(u, v):
+        #         self.G.add_edge(u, v)
         
         ip = "127.0.0.1" # WATCH OUT!!! Since the programm has to run locally, there is no need to use different ip than lochalhost one!
         base_port = 49152 # first of the free usable ports for tcp stuff
@@ -39,6 +41,7 @@ class Graph:
         detailed_node_list = {}
         self.port_map = {}
         port_counter = base_port
+        self.stop_event = Event()
         
         # detailed_node_list -> dictionary with, for each node of the graph, the following info:
         #   <id, ip, ports: {port to neighbor, neigbor id, neighbor ip, port that neighbor uses to connect with that node}>
@@ -81,16 +84,16 @@ class Graph:
         # generates a terminal window for each node
         for node in detailed_node_list:
             # print((detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports']))
-            self.nodes[node] = Node(detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports'], num_nodes)
+            self.nodes[node] = Node(detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports'], num_nodes, None, self.stop_event)
             
             # print(f"detailed_node_list[{node}]: {detailed_node_list[node]['ports']}")
             #print("neighbors in graph_gen.py: ", self.nodes[node].get_neighbors())
         
-        if(option == 'term'):
-            for node in self.nodes:
-                node_term = NodeTerm(self.nodes[node])
-                node_term.open_terminal()
-                time.sleep(0.5)  # Slight delay to ensure terminal opens properly
+        # if(option == 'term'):
+        #     for node in self.nodes:
+        #         node_term = NodeTerm(self.nodes[node])
+        #         node_term.open_terminal()
+        #         time.sleep(0.5)  # Slight delay to ensure terminal opens properly
 
     def shortPath(self, source, target):
         if(source in self.nodes_list and target in self.nodes_list) :
@@ -129,4 +132,7 @@ class Graph:
         self.nodes[node_id].sendMsgBC(msg, str(uuid.uuid4()), node_id, [node_id])
         
     def specialBC(self, origin, msg):
-        self.nodes[origin].specialBC_Node(msg)
+        self.nodes[origin].specialBC_Node(msg, None)
+        
+    def pfd_test(self, origin):
+        self.nodes[origin].pfd_caller()
