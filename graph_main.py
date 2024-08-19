@@ -19,8 +19,10 @@ match l:
             case 'test':
                 g = Graph(int(sys.argv[1]), 0.3)
                 g.specialBC(int(int(sys.argv[1]) / 2), 'test')
+                input("")
                 print("\n")
                 g.pfd_test(int(0))
+                input("")
                 print("\n")
                 g.specialBC(int(0), 'test')
     case 4:

@@ -47,7 +47,7 @@ class Node:
         
         self.sent_to = {}
         self.received_with_id = {}
-        
+                
         self.delay = 0
         
         self.pfd = PerfectFailureDetector()
@@ -58,7 +58,7 @@ class Node:
             self.delay = delay
         
         if(self.id == 5):
-            self.delay = 10.0
+            self.delay = 3.0
         
         for elem in neighbors:
             # print(my_addr + ":" + str(elem['port']), my_addr)
@@ -335,7 +335,8 @@ class Node:
                                 ALREADY_RECVD = False
                                 
                                 for elem in self.received_with_id:
-                                    for el in self.received_with_id[elem][message_id]:
+                                    # for el in self.received_with_id[elem][message_id]:
+                                    if(message_id in self.received_with_id[elem]):
                                         if([shortPath, origin] in self.received_with_id[elem][message_id]):
                                             ALREADY_RECVD = True
                                             break
