@@ -104,7 +104,23 @@ class Graph:
         if(source in self.nodes_list and dest in self.nodes_list):
             # access the instance of Node for accessing "send" method ->
             # -> objects are into self.nodes!
-            self.nodes[source].send_to("SIMPLE", dest, msg, self.shortPath(source, dest), None, source)
+            print(f"Node {source} > neighbors: [", end = "")
+            neighs = self.nodes[source].get_neighbors()
+            
+            for elem in neighs:
+                print(f"{elem['neigh']} ", end = "")
+            print("]")
+            
+            FOUND = False
+            for elem in neighs:
+                if(dest == elem['neigh']):
+                    FOUND = True
+            
+            if(FOUND):       
+                self.nodes[source].send_to("SIMPLE", dest, msg, self.shortPath(source, dest), None, source)
+            else:
+                self.nodes[source].send_to("SIMPLE", dest, msg, [dest], None, source)
+
 
     # function for obtaining vector clock of each node, debugging purposes
     def get_matrix_clock(self):

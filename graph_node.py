@@ -181,7 +181,10 @@ class Node:
                 
                 if FOUND == False:
                     if len(shortestPath) == 1:
-                        print("This should be not possible to be reached")
+                        # print("This should be not possible to be reached") -> who said that, not me ;-)
+                        
+                        for elem in self.neighbors:
+                            self.links[str(elem['neigh'])].send(str([type, msg, shortestPath, self.vectorClock, message_id, origin]))
                         
                         # this case may not be possible to be reached because of implementation constraints
                         # self.sendMsgBC(msg) ### WARNING! It will generate an infinite loop of recursions!!!
@@ -192,42 +195,44 @@ class Node:
                         if(idx < len(shortestPath)):
                             next_hop = shortestPath[idx]
                             
-                            if(next_hop in self.sent_to[message_id]):
+                            if(next_hop not in self.sent_to[message_id]):
+                                self.sent_to[message_id][next_hop] = []
+                            
+                            elif(next_hop in self.sent_to[message_id]):
                                 if([shortestPath, origin] in self.sent_to[message_id][next_hop]):
                                     print(f"Node {self.id} > [FOUND = False] - {message_id} previously sent to {next_hop}, aborting send...")
-                                    pass
+                                else:
+                                    for elem in self.neighbors:
+                                        # print(f'{self.id}: [searching NEAREST NEIGHBOR] {shortestPath[idx]} vs {elem["neigh"]} -> {elem["neigh"] == shortestPath[idx]}')
                             
-                            for elem in self.neighbors:
-                                # print(f'{self.id}: [searching NEAREST NEIGHBOR] {shortestPath[idx]} vs {elem["neigh"]} -> {elem["neigh"] == shortestPath[idx]}')
-                    
-                                # DIFFERENT WAY TO MOVE INTO 'shortestPath' variable:
-                                #   using the method 'index[x]' it can be possible to find
-                                #   the index of object 'x' into it, so, this can be useful for avoiding
-                                #   element deletion from that variable (can be reused for ack of reception!!!)
-                                
-                                if elem["neigh"] == next_hop:
-                                    self.vectorClock[self.id] += 1
-                                    
-                                    if message_id is None:
-                                        message_id = str(uuid.uuid4())  # Unique message ID
-                                    
-                                    self.links[str(elem['neigh'])].send(str([type, msg, shortestPath, self.vectorClock, message_id]))
-                                    
-                                    typeOf = "send-" + type
-                                    self.eventGenerating(msg, typeOf)
-                                    
-                                    self.pending_acks["ACK"].update({message_id:0})
-                                    
-                                    # self.pending_acks[message_id] = (msg, shortestPath, elem['neigh'], time.time())
-                                    # self.ack_flags[message_id] = False  # Initialize ack flag to False
-                                    # self.message_sent_flags[message_id] = True  # Mark message as sent
-                                    
-                                    #print(f"Node {self.id} forwarded message {msg} with ID {message_id} to {elem['neigh']}")
-                                    typeOf = "send-" + type
-                                    self.sent_to[message_id][next_hop].append([shortestPath, origin])
-                                    self.eventGenerating(msg, typeOf)
-                                    break
-                        
+                                        # DIFFERENT WAY TO MOVE INTO 'shortestPath' variable:
+                                        #   using the method 'index[x]' it can be possible to find
+                                        #   the index of object 'x' into it, so, this can be useful for avoiding
+                                        #   element deletion from that variable (can be reused for ack of reception!!!)
+                                        
+                                        if elem["neigh"] == next_hop:
+                                            self.vectorClock[self.id] += 1
+                                            
+                                            if message_id is None:
+                                                message_id = str(uuid.uuid4())  # Unique message ID
+                                            
+                                            self.links[str(elem['neigh'])].send(str([type, msg, shortestPath, self.vectorClock, message_id]))
+                                            
+                                            typeOf = "send-" + type
+                                            self.eventGenerating(msg, typeOf)
+                                            
+                                            self.pending_acks["ACK"].update({message_id:0})
+                                            
+                                            # self.pending_acks[message_id] = (msg, shortestPath, elem['neigh'], time.time())
+                                            # self.ack_flags[message_id] = False  # Initialize ack flag to False
+                                            # self.message_sent_flags[message_id] = True  # Mark message as sent
+                                            
+                                            #print(f"Node {self.id} forwarded message {msg} with ID {message_id} to {elem['neigh']}")
+                                            typeOf = "send-" + type
+                                            self.sent_to[message_id][next_hop].append([shortestPath, origin])
+                                            self.eventGenerating(msg, typeOf)
+                                            break
+                            
                     # OLD IMPLEMENTATION
                     # for elem in self.neighbors:
                     #     print(f'{self.id}: [searching NEAREST NEIGHBOR] {shortestPath[]} vs {elem["neigh"]} -> {elem["neigh"] == shortestPath[0]}')
@@ -298,22 +303,21 @@ class Node:
                                 if(message_id not in self.received_with_id[node_id]):
                                     self.received_with_id[node_id][message_id] = []
                                 
-                                if([shortPath, shortPath[0]] in self.received_with_id[node_id][message_id]):
-                                    break
-                                
-                                self.received_with_id[node_id][message_id].append([shortPath, shortPath[0]])
-                                
-                                if(self.id != shortPath[-1]):
-                                    next_hop = shortPath[shortPath.index(self.id) + 1]
-                                    print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} forwarding {message} to {next_hop}")
-                                    self.send_to(type, next_hop, msg, shortPath, message_id, shortPath[0])
-                                
-                                else:
-                                    shortPath = shortPath[::-1]
-                                    if(msg == "HeartBeatRequest"):
-                                        msg = "HeartBeatReply"
-                                        
-                                    self.send_to("ACK", shortPath[shortPath.index(self.id) + 1], msg, shortPath, message_id, shortPath[0])
+                                if([shortPath, shortPath[0]] not in self.received_with_id[node_id][message_id]):
+                                    
+                                    self.received_with_id[node_id][message_id].append([shortPath, shortPath[0]])
+                                    
+                                    if(self.id != shortPath[-1]):
+                                        next_hop = shortPath[shortPath.index(self.id) + 1]
+                                        print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Node {self.id} forwarding {message} to {next_hop}")
+                                        self.send_to(type, next_hop, msg, shortPath, message_id, shortPath[0])
+                                    
+                                    else:
+                                        shortPath = shortPath[::-1]
+                                        if(msg == "HeartBeatRequest"):
+                                            msg = "HeartBeatReply"
+                                            
+                                        self.send_to("ACK", shortPath[shortPath.index(self.id) + 1], msg, shortPath, message_id, shortPath[0])
                             
                             elif(len(shortPath) == 1):
                                 origin = reconstructed_payload[5]
@@ -326,45 +330,46 @@ class Node:
                                             FOUND = True
                                             break
                                         
-                                if(not FOUND):
-                                    print(f"Node {self.id} : No neighbor found, exiting...")
-                                    break
+                                if(FOUND):
                                         
-                                print(f"from {peer_id}")
-                                
-                                ALREADY_RECVD = False
-                                
-                                for elem in self.received_with_id:
-                                    # for el in self.received_with_id[elem][message_id]:
-                                    if(message_id in self.received_with_id[elem]):
-                                        if([shortPath, origin] in self.received_with_id[elem][message_id]):
-                                            ALREADY_RECVD = True
-                                            break
-                                
-                                if(not ALREADY_RECVD):
+                                    print(f"from {peer_id}")
                                     
-                                    if(peer_id not in self.received_with_id):
-                                        self.received_with_id[peer_id] = {}
+                                    ALREADY_RECVD = False
                                     
-                                    if(message_id not in self.received_with_id[peer_id]):
-                                        self.received_with_id[peer_id][message_id] = []
+                                    for elem in self.received_with_id:
+                                        # for el in self.received_with_id[elem][message_id]:
+                                        if(message_id in self.received_with_id[elem]):
+                                            if([shortPath, origin] in self.received_with_id[elem][message_id]):
+                                                ALREADY_RECVD = True
+                                                break
+                                    
+                                    if(not ALREADY_RECVD):
                                         
-                                    self.received_with_id[peer_id][message_id].append([shortPath, origin])
+                                        if(peer_id not in self.received_with_id):
+                                            self.received_with_id[peer_id] = {}
                                         
-                                    if(shortPath[0] == self.id):
-                                        if(msg == "HeartBeatRequest"):
-                                            msg = "HeartBeatReply"
+                                        if(message_id not in self.received_with_id[peer_id]):
+                                            self.received_with_id[peer_id][message_id] = []
                                             
-                                        self.send_to("ACK", peer_id, msg, [origin], message_id, self.id)
-                                    
-                                    else:
-                                        # print(f"\nNode {self.id}  > MESSAGE NOT FOR ME :(\n")
-                                        if(message_id not in self.fwd_senders):
-                                            self.fwd_senders.update({message_id: peer_id})
+                                        self.received_with_id[peer_id][message_id].append([shortPath, origin])
+                                            
+                                        if(shortPath[0] == self.id):
+                                            if(msg == "HeartBeatRequest"):
+                                                msg = "HeartBeatReply"
+                                                
+                                            self.send_to("ACK", peer_id, msg, [origin], message_id, self.id)
                                         
-                                        for neigh in self.neighbors:
-                                            if((neigh['neigh'] != peer_id) and (neigh['neigh'] != origin) and (neigh['neigh'] != self.fwd_senders[message_id])):
-                                                self.send_to(type, neigh['neigh'], msg, shortPath, message_id, origin)
+                                        else:
+                                            # print(f"\nNode {self.id}  > MESSAGE NOT FOR ME :(\n")
+                                            if(message_id not in self.fwd_senders):
+                                                self.fwd_senders.update({message_id: peer_id})
+                                            
+                                            for neigh in self.neighbors:
+                                                if((neigh['neigh'] != peer_id) and (neigh['neigh'] != origin) and (neigh['neigh'] != self.fwd_senders[message_id])):
+                                                    self.send_to(type, neigh['neigh'], msg, shortPath, message_id, origin)
+                                else:
+                                    print("-> No neighbor found, exiting...")
+                                    
                             else:
                                 print(f"\nError while listening for {type}-message with id {message_id} occurred\n")
                             
@@ -481,31 +486,32 @@ class Node:
                                                 ALREADY_SENT = True
                                                 break
                                                                         
-                                    if(ALREADY_SENT == True):
-                                        break
-                                    
-                                    self.received_with_id[peer_id][message_id].append([shortPath, origin])
-                                    
-                                    if(msg == "HeartBeatReply"):
-                                        # print("Appending to pfd queue")
-                                        self.pfd.append_ack(message_id, origin)
-                                    
-                                    else:
-                                        self.acks_received[message_id].append(origin)
+                                    if(ALREADY_SENT != True):
                                         
-                                    print(self.acks_received[message_id])
-                                    
-                                    if(len(self.acks_received[message_id]) == (self.node_into_network - 1)):
+                                        self.received_with_id[peer_id][message_id].append([shortPath, origin])
+                                        
+                                        if(msg == "HeartBeatReply"):
+                                            # print("Appending to pfd queue")
+                                            self.pfd.append_ack(message_id, origin)
+                                        
+                                        else:
+                                            if(message_id not in self.acks_received):
+                                                self.acks_received[message_id] = []
+
+                                            self.acks_received[message_id].append(origin)
+                                            
                                         print(self.acks_received[message_id])
-                                        print(f"\nNode {self.id} : self.acks_received[{message_id}]: {self.acks_received}\n")
-                                        print(f"Node {self.id} > STOP")
-                                        # self.termination_print()
-                                        # self.stop_event.set()
                                         
-                                    # self.termination_print()
-                                    
-                                else:
-                                    
+                                        if(len(self.acks_received[message_id]) == (self.node_into_network - 1)):
+                                            print(self.acks_received[message_id])
+                                            print(f"\nNode {self.id} : self.acks_received[{message_id}]: {self.acks_received}\n")
+                                            print(f"Node {self.id} > STOP")
+                                            # self.termination_print()
+                                            # self.stop_event.set()
+                                            
+                                        # self.termination_print()
+                                        
+                                else:            
                                     # print(f"Node {self.id} : self.fwd_senders[{message_id}]: {self.fwd_senders[message_id]}")
                                     self.send_to(type, self.fwd_senders[message_id], msg, shortPath, message_id, origin)                        
                             

@@ -75,7 +75,17 @@ match l:
                 
                 # for node in g.nodes.values():
                 #     node.cleanup()
-            
+            case 'send_no_path':
+                g = Graph(int(sys.argv[1]), None)
+                g.plot_graph()
+                
+                print("shortest path:", g.shortPath(int(sys.argv[3]), int(sys.argv[4])) )
+                g.send_msg(int(sys.argv[3]), int(sys.argv[4]), str(sys.argv[5]))
+                
+                # input("")
+                
+                # for node in g.nodes.values():
+                #     node.cleanup()
 input("")
 
 g.stop_event.set()
