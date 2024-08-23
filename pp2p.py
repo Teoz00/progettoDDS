@@ -9,12 +9,22 @@ class PerfectPointToPointLink:
         # generation of context and connections
         self.context = zmq.Context()
 
+        reconnections = 5
+        attempts = 0
+
         # recv socket init
         try:
             self.recv_socket = self.context.socket(zmq.PULL)
             self.recv_socket.bind(f"tcp://{self.address}")
-        except Exception as e:
+            
+        except Exception as e:        
             print(f"Link {self.address} : catched '{e}' while binding with {self.peer_addr}")
+            if(attempts < reconnections):
+                try:
+                    self.recv_socket = self.context.socket(zmq.PULL)
+                    self.recv_socket.bind(f"tcp://{self.address}")
+                except:
+                    print(f"Link {self.address}: attempt {attempts + 1} failed")
 
         # send socket init
         try:
