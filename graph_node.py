@@ -6,6 +6,7 @@ import uuid
 from pp2p import PerfectPointToPointLink
 from event_process import EventP
 from pfd import PerfectFailureDetector
+from RSM import RSM
 
 class Node:
     def __init__(self, my_id, my_addr, neighbors, all, delay, event):
