@@ -52,6 +52,8 @@ class Node:
         self.delay = 0
         
         self.pfd = PerfectFailureDetector()
+
+        self.rsm = RSM()
         
         if(delay == None):
             self.delay = 0.5
@@ -567,7 +569,8 @@ class Node:
 
     # generates event for msg with specified type
     def eventGenerating(self, msg, type):
-        self.event_set.append(EventP(type, len(self.event_set), self.vectorClock, msg))
+        event = self.event_set.append(EventP(type, len(self.event_set), self.vectorClock, msg))
+        self.rsm.addEvent(event)
         #print(f"EventSet{self.id}:{self.event_set}")
     
     #function that sends an ack message
@@ -658,6 +661,7 @@ class Node:
             if(neigh["neigh"] != origin and neigh["neigh"] != sp):
                 some_neighbors_exists = True
                 self.send_to(type, neigh["neigh"], msg, [self.id], msg_id, origin)
+                self.rsm.printEvent
                 
         
         print(f"\nNode {self.id} > waiting for {self.pending_fwd_acks}\n")
