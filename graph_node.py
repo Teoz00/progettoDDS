@@ -7,6 +7,9 @@ from pp2p import PerfectPointToPointLink
 from event_process import EventP
 from pfd import PerfectFailureDetector
 from consensus import Consensus
+from RSM import RSM
+
+###
 
 class Node:
     def __init__(self, my_id, my_addr, neighbors, all, delay, event):
@@ -53,6 +56,7 @@ class Node:
         
         self.pfd = PerfectFailureDetector()
         self.cons = Consensus(self.id, self.nodes_into_network)
+        self.rsm = RSM()
         
         if(delay == None):
             self.delay = 0.1
@@ -606,7 +610,9 @@ class Node:
 
     # generates event for msg with specified type
     def eventGenerating(self, msg, type):
-        self.event_set.append(EventP(type, len(self.event_set), self.vectorClock, msg))
+        event = EventP(type, len(self.event_set), self.vectorClock, msg)
+        self.event_set.append(event) 
+        self.rsm.addEvent(event)
         #print(f"EventSet{self.id}:{self.event_set}")
     
     #function that sends an ack message
@@ -692,6 +698,7 @@ class Node:
         self.pending_fwd_acks[msg_id] = []
                 
         for neigh in self.neighbors:
+            print("Sto dentro al for")
             # print(f"{neigh['neigh']} != {origin} --> {(neigh['neigh'] != origin)}")
             # print(f"{neigh['neigh']} != {sp} --> {neigh['neigh'] != sp}\n")
             if(neigh["neigh"] != origin and neigh["neigh"] != sp):
@@ -726,12 +733,14 @@ class Node:
             if(any(d['neigh'] == elem for d in self.neighbors)):    # it sends directly the message to neighbor without spreading it to all others nodes
                 print("direct send")
                 self.send_to(type, elem, msg, [elem], msg_id, self.id)
+                self.rsm.printEvent()
                 print("")
             else:                                                   # flooding
                 for neigh in self.neighbors:
                     print("unddirect send")
                     # if(neigh['neigh'] not in already_sent_to):
                     self.send_to(type, neigh['neigh'], msg, [elem], msg_id, self.id)
+                    self.rsm.printEvent()
 
             # already_sent_to.append(elem)
             # print(f"already_sent_to : {already_sent_to}")

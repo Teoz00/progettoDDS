@@ -1,6 +1,6 @@
 from graph_gen import Graph
 import sys
-import pyautogui
+# import pyautogui
 import time
 
 #
