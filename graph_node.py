@@ -6,6 +6,7 @@ import uuid
 from pp2p import PerfectPointToPointLink
 from event_process import EventP
 from pfd import PerfectFailureDetector
+from consensus import Consensus
 
 class Node:
     def __init__(self, my_id, my_addr, neighbors, all, delay, event):
@@ -14,14 +15,14 @@ class Node:
         # it contains all pp2p links needed for communicating with neighbors, dictionary
         self.links = {}
         self.address = my_addr
-        self.node_into_network = int(all)
+        self.nodes_into_network = int(all)
         
         self.corrects = []
         
         # list of events happened during the execution
         self.event_set = []
         
-        self.vectorClock = [0] * (self.node_into_network)
+        self.vectorClock = [0] * (self.nodes_into_network)
         
         # list of messages received during the execution
         self.messageLog = []
@@ -51,14 +52,15 @@ class Node:
         self.delay = 0
         
         self.pfd = PerfectFailureDetector()
+        self.cons = Consensus(self.id, self.nodes_into_network)
         
         if(delay == None):
-            self.delay = 0.5
+            self.delay = 0.1
         else:
             self.delay = delay
         
-        if(self.id == 5):
-            self.delay = 3.0
+        # if(self.id == 5):
+        #     self.delay = 3.0
         
         for elem in neighbors:
             # print(my_addr + ":" + str(elem['port']), my_addr)
@@ -79,7 +81,7 @@ class Node:
                 print(f"Catched: {e} while starting thread at {self.id}:{elem['neigh_port']}")
                 # self.cleanup()
                 
-        for i in range(0, self.node_into_network):
+        for i in range(0, self.nodes_into_network):
             if(i != self.id):
                 self.corrects.append(i)
 
@@ -88,7 +90,7 @@ class Node:
         if(not(isinstance(vc, list))):
             vc = ast.literal_eval(vc)
 
-        for i in range(0, self.node_into_network):
+        for i in range(0, self.nodes_into_network):
             if(self.vectorClock[i] < vc[i]):
                 self.vectorClock[i] = vc[i]
     
@@ -354,10 +356,39 @@ class Node:
                                         self.received_with_id[peer_id][message_id].append([shortPath, origin])
                                             
                                         if(shortPath[0] == self.id):
+                                            
                                             if(msg == "HeartBeatRequest"):
                                                 msg = "HeartBeatReply"
+                                            else:
+                                                # print(f"Node {self.id} : no PFD message, checking for other solutions...")
+
+                                                m = ast.literal_eval(message)
+                                                content = m[1].split(", ")
+
+                                                # print(f"Node {self.id} : content = {content}")
                                                 
-                                            self.send_to("ACK", peer_id, msg, [origin], message_id, self.id)
+                                                match content[0]:
+                                                    case 'CONSENSUS':
+                                                        res = self.cons.handle_msg(content, message_id, origin)
+                                                        
+                                                        # case of received something from a commander 
+                                                        if(res):
+                                                            print(f"Node {self.id} > received something from commander, parameters for primitive : {[message_id, self.cons.get_commander(message_id), content[2]]}")
+                                                            self.asking_for_consensus_lieutant(message_id, self.cons.get_commander(message_id), content[2])
+                                                        
+                                                        else:
+                                                            if(self.cons.am_I_a_commander(message_id)):
+                                                                print(f"\n Node {self.id} - Commander : recieved {content[2]} from {origin}\n")
+                                                            
+                                                            if(self.cons.check_values(message_id) and not(self.cons.already_chosen(message_id))):
+                                                                val = self.cons.choose_value(message_id)
+                                                                
+                                                                print(f"Node {self.id} : checking if commander... {self.cons.am_I_a_commander(message_id)}")
+                                                                if(not(self.cons.am_I_a_commander(message_id))):
+                                                                    self.send_to(type, self.cons.get_commander(message_id), str('["CONSENSUS", "LIEUTANT", ' + str(val) + ', ]'), [origin], message_id, self.id)
+                                                            
+                                                    case _:
+                                                        self.send_to("ACK", peer_id, msg, [origin], message_id, self.id)
                                         
                                         else:
                                             # print(f"\nNode {self.id}  > MESSAGE NOT FOR ME :(\n")
@@ -478,14 +509,22 @@ class Node:
 
                                     #print("\nself.sent_to[message_id]: ", self.sent_to[message_id])
                                     # print("\nself.sent_to[message_id][self.fwd_senders[message_id]]: ", self.sent_to[message_id][self.fwd_senders[message_id]])
-                                                                      
-                                    for elem in self.received_with_id:    
-                                        print(f"self.received_with_id[elem]: {self.received_with_id[elem]}")
-                                        if(message_id in self.received_with_id[elem]):
-                                            if([shortPath, origin] in self.received_with_id[elem][message_id]):
-                                                ALREADY_SENT = True
-                                                break
-                                                                        
+                                    try:                  
+                                        for elem in self.received_with_id:    
+                                            # print(f"self.received_with_id[elem]: {self.received_with_id[elem]}")
+                                            if(message_id in self.received_with_id[elem]):
+                                                if([shortPath, origin] in self.received_with_id[elem][message_id]):
+                                                    ALREADY_SENT = True
+                                                    break
+                                                
+                                    except Exception as e:
+                                        for elem in self.received_with_id:    
+                                            # print(f"self.received_with_id[elem]: {self.received_with_id[elem]}")
+                                            if(message_id in self.received_with_id[elem]):
+                                                if([shortPath, origin] in self.received_with_id[elem][message_id]):
+                                                    ALREADY_SENT = True
+                                                    break
+                                                                                
                                     if(ALREADY_SENT != True):
                                         
                                         self.received_with_id[peer_id][message_id].append([shortPath, origin])
@@ -500,10 +539,11 @@ class Node:
 
                                             self.acks_received[message_id].append(origin)
                                             
-                                        print(self.acks_received[message_id])
+                                        self.acks_received[message_id].sort()
+                                        print(f"\nNode {self.id} : self.acks_received[{message_id}]: {self.acks_received}\n")
                                         
-                                        if(len(self.acks_received[message_id]) == (self.node_into_network - 1)):
-                                            print(self.acks_received[message_id])
+                                        if(len(self.acks_received[message_id]) == (self.nodes_into_network - 1)):
+                                            # print(self.acks_received[message_id])
                                             print(f"\nNode {self.id} : self.acks_received[{message_id}]: {self.acks_received}\n")
                                             print(f"Node {self.id} > STOP")
                                             # self.termination_print()
@@ -668,24 +708,47 @@ class Node:
                 # self, type, peer_id, msg, shortestPath, message_id, origin
     
     def specialBC_Node(self, msg, msg_id):
+        print(f"Node {self.id} : corrects {self.corrects} - neighbors: [", end = "")
+        for e in self.neighbors:
+            print(e['neigh'], end = " ")
+        print("]")
+        
         type = "SIMPLE"
         if(msg_id == None):
             msg_id = str(uuid.uuid4())
     
         self.acks_received[msg_id] = []
         
-        for neigh in self.neighbors:
-            for i in range(0, self.node_into_network):
-                if(i != self.id):
-                    self.send_to(type, neigh['neigh'], msg, [i], msg_id, self.id)
+        # already_sent_to = []
+        
+        for elem in self.corrects:
+            print(f"Node {self.id} : analysing {elem}...")
+            if(any(d['neigh'] == elem for d in self.neighbors)):    # it sends directly the message to neighbor without spreading it to all others nodes
+                print("direct send")
+                self.send_to(type, elem, msg, [elem], msg_id, self.id)
+                print("")
+            else:                                                   # flooding
+                for neigh in self.neighbors:
+                    print("unddirect send")
+                    # if(neigh['neigh'] not in already_sent_to):
+                    self.send_to(type, neigh['neigh'], msg, [elem], msg_id, self.id)
+
+            # already_sent_to.append(elem)
+            # print(f"already_sent_to : {already_sent_to}")
+                    
+        # for neigh in self.neighbors:
+        #     for i in range(0, self.nodes_into_network):
+        #         if(i != self.id):                        
+        #             self.send_to(type, neigh['neigh'], msg, [i], msg_id, self.id)
+                    
     
     # simulation of perfect failure detector
     def pfd_caller(self):
         msg_id = str(uuid.uuid4())
-        self.pfd.start_pfd(self.corrects, msg_id, self.delay * (2 * self.node_into_network))
+        self.pfd.start_pfd(self.corrects, msg_id, self.delay * (2 * self.nodes_into_network))
         self.specialBC_Node("HeartBeatRequest", msg_id)
         
-        time.sleep(self.delay * (2 * self.node_into_network + 1))
+        time.sleep(self.delay * (2 * self.nodes_into_network + 1))
         
         if(self.pfd.get_flag()):
             print(f"pfd.get_flag = {self.pfd.get_flag()} - corrects : {self.pfd.get_new_corrects()}")
@@ -694,7 +757,31 @@ class Node:
         
         elif(self.pfd.get_flag() == "AUG_DELAY"):
             self.pfd_caller()    
+    
+
+    def asking_for_consensus_commander(self, value):
+        message = ("CONSENSUS, " + "COMMANDER, " + str(value))
+        id = message_id = str(uuid.uuid4())
+        self.specialBC_Node(message, None)
+        self.cons.set_value(id, value)
+
+        
+    def asking_for_consensus_lieutant(self, msg_id, commander, value):
+        if(self.cons.get_commander(msg_id) == None):
+            # this is a very bad situation, let's hope this never happen...
+            print(f"Node {self.id} : error while checking for commander for message {msg_id}")
+        else:
+            msg = ("CONSENSUS, " + "LIEUTANT, "  + value)
+            type = "SIMPLE"
+            if(msg_id == None):
+                msg_id = str(uuid.uuid4())
+        
+            self.acks_received[msg_id] = []
             
+            for neigh in self.neighbors:
+                for i in range(0, self.nodes_into_network):
+                    if(i != self.id and i != commander):
+                        self.send_to(type, neigh['neigh'], msg, [i], msg_id, self.id)
     
     # prints vc, ml and es for debugging purposes          
     def termination_print(self):
@@ -707,3 +794,6 @@ class Node:
         print("Event set: ")
         for elem in self.event_set:
             print(f"\t[type: {elem.get_type()}, index: {elem.get_index()}, ts: {elem.get_ts()}]")
+            
+    def get_values(self):
+        return self.cons.get_chosen_values()

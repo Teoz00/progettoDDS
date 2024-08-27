@@ -37,7 +37,6 @@ match l:
                 # for node in g.nodes.values():
                 #     node.cleanup()
         
-        
     case 5:
         cmd = sys.argv[2]
         match cmd:
@@ -60,7 +59,14 @@ match l:
                 
                 # for node in g.nodes.values():
                 #     node.cleanup()
-            
+            case 'consensus':
+                g = Graph(int(sys.argv[1]), None)
+                g.plot_graph()
+                g.ask_consensus(int(sys.argv[3]), sys.argv[4])
+                input("")
+                g.print_agreed_values()
+                
+                
     case 6:
         cmd = sys.argv[2]
         match cmd:

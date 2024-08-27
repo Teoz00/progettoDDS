@@ -152,3 +152,10 @@ class Graph:
         
     def pfd_test(self, origin):
         self.nodes[origin].pfd_caller()
+        
+    def ask_consensus(self, origin, value):
+        self.nodes[origin].asking_for_consensus_commander(value)
+
+    def print_agreed_values(self):
+        for node in self.nodes:
+            print(f"Node {self.nodes[node].get_id()} : {self.nodes[node].get_values()}")
