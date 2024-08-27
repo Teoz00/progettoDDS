@@ -569,7 +569,8 @@ class Node:
 
     # generates event for msg with specified type
     def eventGenerating(self, msg, type):
-        event = self.event_set.append(EventP(type, len(self.event_set), self.vectorClock, msg))
+        event = EventP(type, len(self.event_set), self.vectorClock, msg)
+        self.event_set.append(event) 
         self.rsm.addEvent(event)
         #print(f"EventSet{self.id}:{self.event_set}")
     
