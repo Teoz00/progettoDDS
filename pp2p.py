@@ -26,6 +26,10 @@ class PerfectPointToPointLink:
                 except:
                     print(f"Link {self.address}: attempt {attempts + 1} failed")
 
+                finally:
+                    if(attempts < reconnections):
+                        print(f"Link {self.address}: connection success!\n")
+
         # send socket init
         try:
             self.send_socket = self.context.socket(zmq.PUSH)

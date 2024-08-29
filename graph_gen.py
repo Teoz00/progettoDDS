@@ -22,7 +22,9 @@ from graph_node import Node
 #         os.system(command)
 
 class Graph:
-    def __init__(self, num_nodes, option):
+    def __init__(self, id, num_nodes, base_port, event):
+        
+        self.id = str(id)
         self.nodes = {}
         
         # generates a random minimally connected graph network
@@ -35,13 +37,13 @@ class Graph:
         #         self.G.add_edge(u, v)
         
         ip = "127.0.0.1" # WATCH OUT!!! Since the programm has to run locally, there is no need to use different ip than lochalhost one!
-        base_port = 49152 # first of the free usable ports for tcp stuff
+        self.base_port = base_port # first of the free usable ports for tcp stuff
         
         self.nodes_list = self.G.nodes()
         detailed_node_list = {}
         self.port_map = {}
         port_counter = base_port
-        self.stop_event = Event()
+        self.stop_event = event
         
         # detailed_node_list -> dictionary with, for each node of the graph, the following info:
         #   <id, ip, ports: {port to neighbor, neigbor id, neighbor ip, port that neighbor uses to connect with that node}>
@@ -55,6 +57,8 @@ class Graph:
                     self.port_map[(neighbor, node)] = port_counter + 1
                     port_counter += 2   
         
+        base_port = port_counter
+
         for node in self.nodes_list:
             ports_for_node = []
             for (node1, node2), port in self.port_map.items():
@@ -73,7 +77,7 @@ class Graph:
                         elem.update({"neigh_port": neighbor['port']})
 
         # writes onto a txt file a schematic representation of the generated network
-        filename = "graph.txt"
+        filename = "./txt_files/graph_" + str(uuid.uuid4()) + ".txt"
         with open(filename, 'w') as file:
             for node in detailed_node_list:
                 for port_info in detailed_node_list[node]['ports']:
@@ -136,8 +140,8 @@ class Graph:
     # plots the graph using matplotlib        
     def plot_graph(self):
         pos = nx.spring_layout(self.G)
-        nx.draw(self.G, pos, with_labels=True, node_color='skyblue', node_size=800, edge_color='gray')
-        plt.title("Connect Undirected graph")
+        plt.title(f"Application process {self.id}")
+        nx.draw(self.G, pos, with_labels=True, node_color='#00a4db', node_size=800, edge_color='gray')
         plt.show()
         
     # devoloping purposes function
@@ -156,6 +160,17 @@ class Graph:
     def ask_consensus(self, origin, value):
         self.nodes[origin].asking_for_consensus_commander(value)
 
+    def set_same_input_rsm(self, event_set):
+        for node in self.nodes:
+            self.nodes[node].set_RSM_input_set(event_set)
+
+    def get_port_counter(self):
+        return self.base_port
+
     def print_agreed_values(self):
         for node in self.nodes:
             print(f"Node {self.nodes[node].get_id()} : {self.nodes[node].get_values()}")
+
+    def cleanup(self):
+        for node in self.nodes:
+            self.nodes[node].cleanup()

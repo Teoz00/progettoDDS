@@ -13,7 +13,7 @@ class RSM:
         #Deterministic
         #visible channel ==> partial/global ordering : Causal order :: guaranted
         #consensous half + 1 min to have confirmed it
-        #if failour => error to client (Lentezza o info sbagliate sono una prova della failure)
+        #if failure => error to client (Lentezza o info sbagliate sono una prova della failure)
         #inputLog : tracking of event received as input
         #checkpoint : verify dimension of the log (sizeOf) -- do also tracking to bring the replica 
         #Reconfiguration : add or remnove replicas while client executing /? 
@@ -28,6 +28,10 @@ class RSM:
 
     def updateEvent(self,event):
         self.checkpoint = {event : [event.get_ts(), event.ACTUAL_STATE]}
+
+    def setInput(self, event_set):
+        for elem in event_set:
+            self.addEvent(elem)
 
     def getEventCheck(self, event):
         return self.checkpoint[str(event)]

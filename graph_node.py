@@ -792,6 +792,9 @@ class Node:
                     if(i != self.id and i != commander):
                         self.send_to(type, neigh['neigh'], msg, [i], msg_id, self.id)
     
+    def set_RSM_input_set(self, events):
+        self.rsm.setInput(events)
+
     # prints vc, ml and es for debugging purposes          
     def termination_print(self):
         print("Vector clock: ", self.vectorClock)
