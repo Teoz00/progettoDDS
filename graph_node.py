@@ -732,14 +732,14 @@ class Node:
             if(any(d['neigh'] == elem for d in self.neighbors)):    # it sends directly the message to neighbor without spreading it to all others nodes
                 print("direct send")
                 self.send_to(type, elem, msg, [elem], msg_id, self.id)
-                self.rsm.printEvent()
+                #self.rsm.printEvent()
                 print("")
             else:                                                   # flooding
                 for neigh in self.neighbors:
                     print("indirect send")
                     # if(neigh['neigh'] not in already_sent_to):
                     self.send_to(type, neigh['neigh'], msg, [elem], msg_id, self.id)
-                    self.rsm.printEvent()
+                    #self.rsm.printEvent()
 
             # already_sent_to.append(elem)
             # print(f"already_sent_to : {already_sent_to}")

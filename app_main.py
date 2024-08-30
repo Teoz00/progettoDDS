@@ -24,7 +24,7 @@ def directory_cleaner():
 
 
 g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
-g.plot_graph()
+#g.plot_graph()
 g.get_consensus_processes(0)
 
 input("")
