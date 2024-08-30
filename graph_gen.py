@@ -11,16 +11,6 @@ from graph_node import Node
 
 # MODIFY graph_main.py FOR OBTAINING RESULTS!
 
-# class NodeTerm:
-#     def __init__(self, node):
-#         self.node = node
-
-#     def open_terminal(self):
-#         neighbors = self.node.get_neighbors()
-#         print(neighbors)
-#         command = f'gnome-terminal -- bash -c "python3 node_term.py {self.node.id} {self.node.address} {neighbors}; exec bash"'
-#         os.system(command)
-
 class Graph:
     def __init__(self, id, num_nodes, base_port, event):
         
@@ -64,7 +54,7 @@ class Graph:
             for (node1, node2), port in self.port_map.items():
                 if node1 == node:
                     ports_for_node.append({"port": port, "neigh": node2})
-                
+
             detailed_node_list[node] = {"id": node, "ip": ip, "ports": ports_for_node}
         
         # generates, for each node, a list of info about neighbors, ports and ips
@@ -78,6 +68,7 @@ class Graph:
 
         # writes onto a txt file a schematic representation of the generated network
         filename = "./txt_files/graph_" + str(uuid.uuid4()) + ".txt"
+        print(f"Graph {self.id} : {str(uuid.uuid4())}")
         with open(filename, 'w') as file:
             for node in detailed_node_list:
                 for port_info in detailed_node_list[node]['ports']:
@@ -141,7 +132,7 @@ class Graph:
     def plot_graph(self):
         pos = nx.spring_layout(self.G)
         plt.title(f"Application process {self.id}")
-        nx.draw(self.G, pos, with_labels=True, node_color='#00a4db', node_size=800, edge_color='gray')
+        nx.draw(self.G, pos, with_labels=True, node_color='#00a4db', node_size=600, edge_color='gray')
         plt.show()
         
     # devoloping purposes function
@@ -169,7 +160,7 @@ class Graph:
 
     def print_agreed_values(self):
         for node in self.nodes:
-            print(f"Node {self.nodes[node].get_id()} : {self.nodes[node].get_values()}")
+            print(f"Node {self.nodes[node].get_id()} : {self.nodes[node].get_value()}")
 
     def cleanup(self):
         for node in self.nodes:

@@ -24,7 +24,11 @@ class ApplicationGraph:
 
         self.stop_event = Event()
 
+        # each application process has an event for consensus
+        self.consensus_events = {}
+
         for node in self.app_nodes_list:
+            self.consensus_events.update({node: Event()})
             for neighbor in self.app_graph.neighbors(node):
                 if (node, neighbor) not in self.port_map:
                     self.port_map[(node, neighbor)] = port_counter
@@ -43,14 +47,19 @@ class ApplicationGraph:
         nodes_per_subgraph = int(3 * int(t_byzantine) + 1)
 
         for node in detailed_app_nodes_list:
-            self.app_nodes[node] = ApplicationProcess(detailed_app_nodes_list[node]['id'], detailed_app_nodes_list[node]['ip'], detailed_app_nodes_list[node]['ports'], nodes_per_subgraph, port_counter, self.stop_event)
+            self.app_nodes[node] = ApplicationProcess(detailed_app_nodes_list[node]['id'], detailed_app_nodes_list[node]['ip'], detailed_app_nodes_list[node]['ports'], nodes_per_subgraph, port_counter, self.stop_event, self.consensus_events[detailed_app_nodes_list[node]['id']])
             port_counter = self.app_nodes[node].get_port_counter()
             
+    def get_consensus_processes(self, id):
+        cons = []
+        for elem in self.app_nodes:
+            cons.append(self.app_nodes[elem].get_consensus(id, 'test4consensus'))
+            print(cons)
 
     def plot_graph(self):
         pos = nx.spring_layout(self.G)
         plt.title("Application Graph")
-        nx.draw(self.G, pos, with_labels=True, node_color='#ffc72b', node_size=800, edge_color='#4a4a4a')
+        nx.draw(self.G, pos, with_labels=True, node_color='#ffc72b', node_size= 1200, edge_color='#4a4a4a')
         plt.show()
 
         for elem in self.app_nodes:

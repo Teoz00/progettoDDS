@@ -114,4 +114,7 @@ class Consensus:
         return False
     
     def get_chosen_values(self):
+        if(self.chosen_values == {}):
+            return False
+        
         return self.chosen_values

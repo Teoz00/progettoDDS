@@ -60,11 +60,9 @@ class RSM:
         self.addEvent(EventP(event.getEventCheck()))
 
     def printEvent(self):
-        print("self.event: ", self.event)
+        # print("self.event: ", self.event)
         if(len(self.event) != 0):
             for events in self.event:
-                print("Event index: " + str(events.get_index()) + 
-                    "\nEvent type: " + str(events.get_type()) + 
-                    "\nEvent id: " + str(events))
+                print(f"Event {events} > index: {str(events.get_index())}\t type: {str(events.get_type())}")
         
 
