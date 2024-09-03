@@ -72,6 +72,7 @@ class ApplicationGraph:
         
         counter = 0
         while(counter < len(self.app_nodes)):
+            time.sleep(2.5)
             counter = 0
             for elem in events:
                 if(elem.is_set()):
@@ -79,7 +80,8 @@ class ApplicationGraph:
 
         self.consensus_events[msg_id].sort()
         
-        print(f"AppGraph - consensus :", end = "")
+        # time.sleep(2.0)
+        print(f"AppGraph - consensus :\n", end = "")
         for elem in self.consensus_events[msg_id]:
                 print("\t", elem)
 

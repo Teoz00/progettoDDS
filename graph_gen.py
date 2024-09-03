@@ -178,7 +178,6 @@ class Graph:
         while(len(self.consensus_events[msg_id]) < len(self.nodes)):
             # self.print_agreed_values()
             for elem in self.nodes:
-                # print("elem: ", elem)
                 FOUND = False
 
                 for e in self.consensus_events[msg_id]:
@@ -190,7 +189,7 @@ class Graph:
                     v = self.nodes[elem].is_chosen(msg_id) 
 
                     if(v != False):
-                            self.consensus_events[msg_id].append({elem : v})
+                        self.consensus_events[msg_id].append({elem : v})
 
         print(f"Graph {self.id} > consensus reached : {self.consensus_events[msg_id]}")
         return self.consensus_events[msg_id]

@@ -20,7 +20,7 @@ class ApplicationProcess:
             cons.append(self.subgraph.ask_consensus(id, msg_id, msg))
             # self.subgraph.nodes[id].asking_for_consensus_commander(msg)
         
-        # print(f"ApplicationProcess {self.id} > consensus list {cons}")
+        print(f"ApplicationProcess {self.id} > consensus list {cons}")
         return cons
 
     def print_cons(self):

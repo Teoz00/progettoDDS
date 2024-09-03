@@ -393,9 +393,9 @@ class Node:
 
                                                             # check if there are enough values to make a choice
                                                             # and if this choice was not already taken previously
-                                                            if(self.cons.check_values(message_id) and not(self.cons.already_chosen(message_id))):
+                                                            if(self.cons.check_values(message_id)) and not(self.cons.already_chosen(message_id)):
                                                                 val = self.cons.choose_value(message_id)
-                                                                print(f"Node {self.id} : chosen value = {val}")
+                                                                # print(f"Node {self.id} : chosen value = {val}")
                                                                 # print(f"Node {self.id} : checking if commander... {self.cons.am_I_a_commander(message_id)}")
                                                                 if(not(self.cons.am_I_a_commander(message_id))):
                                                                     self.send_to(type, self.cons.get_commander(message_id), str('["CONSENSUS", "LIEUTANT", ' + str(val) + ', ]'), [origin], message_id, self.id)
