@@ -59,9 +59,9 @@ class Node:
         self.rsm = RSM()
         
         if(delay == None):
-            self.delay = 0.1
+            self.delay = 0.001
         else:
-            self.delay = delay
+            self.delay = 0.001
         
         # if(self.id == 5):
         #     self.delay = 3.0
@@ -329,6 +329,7 @@ class Node:
                                 origin = reconstructed_payload[5]
                                 peer_id = -1
                                 
+                                # checking if a direct neighbor sends something for me
                                 for elem in self.neighbors:
                                         # print(f"found: {self.links[str(elem['neigh'])]} vs {link}")
                                         if(self.links[str(elem["neigh"])] == link):
@@ -336,8 +337,8 @@ class Node:
                                             FOUND = True
                                             break
                                         
+                                # if a neighbor specifically sends something to me
                                 if(FOUND):
-                                        
                                     print(f"from {peer_id}")
                                     
                                     ALREADY_RECVD = False
@@ -349,6 +350,7 @@ class Node:
                                                 ALREADY_RECVD = True
                                                 break
                                     
+                                    # if I did not received it in the past
                                     if(not ALREADY_RECVD):
                                         
                                         if(peer_id not in self.received_with_id):
@@ -357,15 +359,16 @@ class Node:
                                         if(message_id not in self.received_with_id[peer_id]):
                                             self.received_with_id[peer_id][message_id] = []
                                             
-                                        self.received_with_id[peer_id][message_id].append([shortPath, origin])
-                                            
+                                        self.received_with_id[peer_id][message_id].append([shortPath, origin])      # marking in for not receiving it anymore
+                                        
                                         if(shortPath[0] == self.id):
                                             
-                                            if(msg == "HeartBeatRequest"):
+                                            if(msg == "HeartBeatRequest"):      # message related to PerfectFailureDetector
                                                 msg = "HeartBeatReply"
                                             else:
                                                 # print(f"Node {self.id} : no PFD message, checking for other solutions...")
 
+                                                # decomposing payload into a list...
                                                 m = ast.literal_eval(message)
                                                 content = m[1].split(", ")
 
@@ -375,19 +378,25 @@ class Node:
                                                     case 'CONSENSUS':
                                                         res = self.cons.handle_msg(content, message_id, origin)
                                                         
-                                                        # case of received something from a commander 
+                                                        # case of received something from a commander, 
+                                                        # I'll gonna send what I received from commander to other lieutants
                                                         if(res):
-                                                            print(f"Node {self.id} > received something from commander, parameters for primitive : {[message_id, self.cons.get_commander(message_id), content[2]]}")
+                                                            # print(f"Node {self.id} > received something from commander, parameters for primitive : {[message_id, self.cons.get_commander(message_id), content[2]]}")
                                                             self.asking_for_consensus_lieutant(message_id, self.cons.get_commander(message_id), content[2])
                                                         
+                                                        # case when I received something from another lieutant
                                                         else:
                                                             if(self.cons.am_I_a_commander(message_id)):
                                                                 print(f"\n Node {self.id} - Commander : recieved {content[2]} from {origin}\n")
                                                             
+                                                            # print(f"Node {self.id} > checking values on {message_id} : {self.cons.check_values(message_id)} - {(self.cons.already_chosen(message_id))} ")
+
+                                                            # check if there are enough values to make a choice
+                                                            # and if this choice was not already taken previously
                                                             if(self.cons.check_values(message_id) and not(self.cons.already_chosen(message_id))):
                                                                 val = self.cons.choose_value(message_id)
-                                                                
-                                                                print(f"Node {self.id} : checking if commander... {self.cons.am_I_a_commander(message_id)}")
+                                                                print(f"Node {self.id} : chosen value = {val}")
+                                                                # print(f"Node {self.id} : checking if commander... {self.cons.am_I_a_commander(message_id)}")
                                                                 if(not(self.cons.am_I_a_commander(message_id))):
                                                                     self.send_to(type, self.cons.get_commander(message_id), str('["CONSENSUS", "LIEUTANT", ' + str(val) + ', ]'), [origin], message_id, self.id)
                                                             
@@ -399,9 +408,17 @@ class Node:
                                             if(message_id not in self.fwd_senders):
                                                 self.fwd_senders.update({message_id: peer_id})
                                             
-                                            for neigh in self.neighbors:
-                                                if((neigh['neigh'] != peer_id) and (neigh['neigh'] != origin) and (neigh['neigh'] != self.fwd_senders[message_id])):
-                                                    self.send_to(type, neigh['neigh'], msg, shortPath, message_id, origin)
+                                            m = ast.literal_eval(message)
+                                            content = m[1].split(", ")
+
+                                            if(content[0] == 'CONSENSUS'):
+                                                for neigh in self.neighbors:
+                                                    if((neigh['neigh'] != peer_id) and (neigh['neigh'] != origin)):
+                                                        self.send_to(type, neigh['neigh'], msg, shortPath, message_id, origin)
+                                            else:
+                                                for neigh in self.neighbors:
+                                                    if((neigh['neigh'] != peer_id) and (neigh['neigh'] != origin) and (neigh['neigh'] != self.fwd_senders[message_id])):
+                                                        self.send_to(type, neigh['neigh'], msg, shortPath, message_id, origin)
                                 else:
                                     print("-> No neighbor found, exiting...")
                                     
@@ -698,7 +715,6 @@ class Node:
         self.pending_fwd_acks[msg_id] = []
                 
         for neigh in self.neighbors:
-            print("Sto dentro al for")
             # print(f"{neigh['neigh']} != {origin} --> {(neigh['neigh'] != origin)}")
             # print(f"{neigh['neigh']} != {sp} --> {neigh['neigh'] != sp}\n")
             if(neigh["neigh"] != origin and neigh["neigh"] != sp):
@@ -729,18 +745,18 @@ class Node:
         # already_sent_to = []
         
         for elem in self.corrects:
-            print(f"Node {self.id} : analysing {elem}...")
+            # print(f"Node {self.id} : analysing {elem}...")
             if(any(d['neigh'] == elem for d in self.neighbors)):    # it sends directly the message to neighbor without spreading it to all others nodes
-                print("direct send")
+                # print("direct send")
                 self.send_to(type, elem, msg, [elem], msg_id, self.id)
-                self.rsm.printEvent()
+                # self.rsm.printEvent()
                 print("")
             else:                                                   # flooding
                 for neigh in self.neighbors:
-                    print("unddirect send")
+                    # print("indirect send")
                     # if(neigh['neigh'] not in already_sent_to):
                     self.send_to(type, neigh['neigh'], msg, [elem], msg_id, self.id)
-                    self.rsm.printEvent()
+                    # self.rsm.printEvent()
 
             # already_sent_to.append(elem)
             # print(f"already_sent_to : {already_sent_to}")
@@ -768,10 +784,12 @@ class Node:
             self.pfd_caller()    
     
 
-    def asking_for_consensus_commander(self, value):
-        message = ("CONSENSUS, " + "COMMANDER, " + str(value))
-        id = message_id = str(uuid.uuid4())
-        self.specialBC_Node(message, None)
+    def asking_for_consensus_commander(self, id, value):
+        if id == None:
+            id = message_id = str(uuid.uuid4())
+    
+        message = ("CONSENSUS, " + "COMMANDER, " + (str(value)))
+        self.specialBC_Node(message, id)
         self.cons.set_value(id, value)
 
         
@@ -787,10 +805,20 @@ class Node:
         
             self.acks_received[msg_id] = []
             
-            for neigh in self.neighbors:
-                for i in range(0, self.nodes_into_network):
-                    if(i != self.id and i != commander):
-                        self.send_to(type, neigh['neigh'], msg, [i], msg_id, self.id)
+            for elem in self.corrects:
+                if(elem != self.id and elem != commander):
+                    if(any(d['neigh'] == elem for d in self.neighbors)):    # it sends directly the message to neighbor without spreading it to all others nodes
+                        self.send_to(type, elem, msg, [elem], msg_id, self.id)
+                        print("")
+                    else:                                                   # flooding
+                        for neigh in self.neighbors:
+                            self.send_to(type, neigh['neigh'], msg, [elem], msg_id, self.id)
+
+
+            # for neigh in self.neighbors:
+            #     for i in range(0, self.nodes_into_network):
+            #         if(i != self.id and i != commander):
+            #             self.send_to(type, neigh['neigh'], msg, [i], msg_id, self.id)
     
     def set_RSM_input_set(self, events):
         self.rsm.setInput(events)
@@ -806,6 +834,9 @@ class Node:
         print("Event set: ")
         for elem in self.event_set:
             print(f"\t[type: {elem.get_type()}, index: {elem.get_index()}, ts: {elem.get_ts()}]")
-            
+    
+    def is_chosen(self, msg_id):
+        return self.cons.get_val(msg_id)
+
     def get_values(self):
-        return self.cons.get_chosen_values()
+        print(self.cons.get_chosen_values())

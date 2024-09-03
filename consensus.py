@@ -94,9 +94,11 @@ class Consensus:
             return None
         
     def check_values(self, msg_id):
+        # print(f"self values: {self.values} vs msg_id : {msg_id} --> {msg_id in self.values}, {len(self.values[msg_id])}")
+
         if(msg_id in self.values):
             if(len(self.values[msg_id]) == self.number_nodes - 1):
-                return True
+                    return True
             
         return False
     
@@ -110,6 +112,12 @@ class Consensus:
     def already_chosen(self, msg_id):
         if(msg_id in self.chosen_values):
             return True
+
+        return False
+    
+    def get_val(self, msg_id):
+        if(self.already_chosen(msg_id)):
+            return self.chosen_values[msg_id]
 
         return False
     
