@@ -7,6 +7,7 @@ class RSM:
         self.event = set() #EventInputs
         self.inputLog = [] # for every event following the code order
         self.checkpoint = {} #events catcher / backupEvetns -- dizionario di liste {"event" : [ts,state]}
+        self.output = set()
         #self.input  #client request
         #output something
         #ordering among events (Input in same order)  
