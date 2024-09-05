@@ -4,10 +4,12 @@ class RSM:
     def __init__(self):
         self.STATE = ["WAITING", "LISTENING", "BUSY", "EXECUTING"] #MACRO -- per ogni stato passato dal server mi serve un checksum
         self.ACTUAL_STATE = None
-        self.event = set() #EventInputs
+        self.event = set() #EventInputs -- replicas at most 2N + 1 
+        self.correct = []
+        self.faulty = []
         self.inputLog = [] # for every event following the code order
         self.checkpoint = {} #events catcher / backupEvetns -- dizionario di liste {"event" : [ts,state]}
-        self.output = set()
+        self.output = []
         #self.input  #client request
         #output something
         #ordering among events (Input in same order)  
@@ -24,8 +26,13 @@ class RSM:
         #EXTENSION: 
 
     def addEvent(self, event):
+        self.ACTUAL_STATE = "BUSY"
         self.event.add(event) 
-        self.checkpoint = {event : [event.get_ts(), "LISTENING"] } #mi salvo il timestamp
+        self.correct.append(event)
+        #print(self.correct)
+        self.checkpoint = {event : [event.get_ts(), event.type] } #mi salvo il timestamp
+        self.inputLog.append(event) #I keep trace of my input
+        self.ACTUAL_STATE = "LISTENING"
 
     def updateEvent(self,event):
         self.checkpoint = {event : [event.get_ts(), event.ACTUAL_STATE]}
@@ -60,10 +67,49 @@ class RSM:
     def restore(self, event):
         self.addEvent(EventP(event.getEventCheck()))
 
-    def printEvent(self):
+    def typeFun(self, value): #example function / better 
+        return type(value) 
+    
+    def outputGenerator(self, inputFunction):
+        for e in self.correct:
+            self.output.append(inputFunction(e))
+
+    def checkCorrectness(self, inputFunction): #inputFunction is fun / I think I need the consensous!
+        self.outputGenerator(inputFunction)
+
+        for elem in range(len(self.output)):
+            for elem2 in range(len(self.output)):
+                if self.output[elem] == self.output[elem2]:
+                    print("Correct")
+                else:
+                    print("NOT Correct")
+                    print(f"|CORRECT BEFORE: {self.correct}|")
+                    print(f"********************\nRSM --> faulty\nThe following output1 /{self.correct[elem]}/: {self.output[elem]}\nis different by output2 /{self.correct[elem2]}/ {self.output[elem2]}\n********************")
+                    self.correct.remove(self.correct[elem2])
+                    print (f"|CORRECT AFTER: {self.correct}|")
+                    return False
+        return True
+
+    def printEvent(self, type):
         # print("self.event: ", self.event)
-        if(len(self.event) != 0):
-            for events in self.event:
-                print(f"Event {events} > index: {str(events.get_index())}\t type: {str(events.get_type())}")
-        
+        match type:
+            case "bc":
+                if(len(self.event) != 0):
+                    for events in self.event:
+                        print(f"Event {events} > index: {str(events.get_index())}\t type: {str(events.get_type())}")
+            case "test":
+                pass
+
+
+###############################################################
+#NB, per usare questo test, commentare |self.checkpoint = {event : [event.get_ts(), "LISTENING"] } #mi salvo il timestamp|
+#Ed usare python RSM.py
+rsm = RSM()
+
+rsm.addEvent("1")
+rsm.addEvent("2")
+rsm.addEvent(3)
+
+rsm.checkCorrectness(rsm.typeFun)
+##################################################
 
