@@ -64,6 +64,9 @@ class RSM:
 
         self.event.remove(eventToRemove)
 
+    def join():
+        pass
+
     def restore(self, event):
         self.addEvent(EventP(event.getEventCheck()))
 
@@ -90,6 +93,7 @@ class RSM:
                     return False
         return True
 
+"""
     def printEvent(self, type):
         # print("self.event: ", self.event)
         match type:
@@ -99,16 +103,21 @@ class RSM:
                         print(f"Event {events} > index: {str(events.get_index())}\t type: {str(events.get_type())}")
             case "test":
                 pass
-
+"""
 
 ###############################################################
 #NB, per usare questo test, commentare |self.checkpoint = {event : [event.get_ts(), "LISTENING"] } #mi salvo il timestamp|
 #Ed usare python RSM.py
 rsm = RSM()
 
-rsm.addEvent("1")
-rsm.addEvent("2")
-rsm.addEvent(3)
+event1 = EventP("send", 1, [4, 3, 5], "Ciao1")
+event2 = EventP("send", 1, [4, 3, 5], "Ciao2")
+ 
+#rsm.addEvent("1")
+#rsm.addEvent("2")
+#rsm.addEvent(3)
+rsm.addEvent(event1)
+rsm.addEvent(event2) 
 
 rsm.checkCorrectness(rsm.typeFun)
 ##################################################
