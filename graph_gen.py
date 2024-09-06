@@ -11,6 +11,16 @@ from graph_node import Node
 
 # MODIFY graph_main.py FOR OBTAINING RESULTS!
 
+# class NodeTerm:
+#     def __init__(self, node):
+#         self.node = node
+
+#     def open_terminal(self):
+#         neighbors = self.node.get_neighbors()
+#         print(neighbors)
+#         command = f'gnome-terminal -- bash -c "python3 node_term.py {self.node.id} {self.node.address} {neighbors}; exec bash"'
+#         os.system(command)
+
 class Graph:
     def __init__(self, id, num_nodes, base_port, event):
         
@@ -19,6 +29,8 @@ class Graph:
         
         # generates a random minimally connected graph network
         # self.G = nx.random_tree(num_nodes)
+        # self.G = nx.erdos_renyi_graph(n=num_nodes, p=0.75, seed=int((time.time() / 10000) % 10000))
+
         self.G = nx.erdos_renyi_graph(n=num_nodes, p=0.5, seed=43)
         
         # while not nx.is_connected(self.G):
@@ -34,6 +46,8 @@ class Graph:
         self.port_map = {}
         port_counter = base_port
         self.stop_event = event
+        self.cons_events = {}
+        self.consensus_events = {}
         
         # detailed_node_list -> dictionary with, for each node of the graph, the following info:
         #   <id, ip, ports: {port to neighbor, neigbor id, neighbor ip, port that neighbor uses to connect with that node}>
@@ -45,9 +59,9 @@ class Graph:
                 if (node, neighbor) not in self.port_map:
                     self.port_map[(node, neighbor)] = port_counter
                     self.port_map[(neighbor, node)] = port_counter + 1
-                    port_counter += 2   
+                    port_counter += 2
         
-        base_port = port_counter
+        self.base_port = port_counter
 
         for node in self.nodes_list:
             ports_for_node = []
@@ -112,9 +126,9 @@ class Graph:
                     FOUND = True
             
             if(FOUND):       
-                self.nodes[source].send_to("SIMPLE", dest, msg, self.shortPath(source, dest), None, source)
+                self.nodes[source].send_to("SIMPLE", dest, str(msg + str(self.id)), self.shortPath(source, dest), None, source)
             else:
-                self.nodes[source].send_to("SIMPLE", dest, msg, [dest], None, source)
+                self.nodes[source].send_to("SIMPLE", dest, str(msg + str(self.id)), [dest], None, source)
 
 
     # function for obtaining vector clock of each node, debugging purposes
@@ -148,9 +162,6 @@ class Graph:
     def pfd_test(self, origin):
         self.nodes[origin].pfd_caller()
         
-    def ask_consensus(self, origin, value):
-        self.nodes[origin].asking_for_consensus_commander(value)
-
     def set_same_input_rsm(self, event_set):
         for node in self.nodes:
             self.nodes[node].set_RSM_input_set(event_set)
@@ -158,9 +169,45 @@ class Graph:
     def get_port_counter(self):
         return self.base_port
 
+    def ask_consensus(self, id, msg_id, msg):
+        self.consensus_events[msg_id] = []
+
+        if(id in self.nodes):
+            self.nodes[id].asking_for_consensus_commander(msg_id, msg)
+        
+        while(len(self.consensus_events[msg_id]) < len(self.nodes)):
+            # self.print_agreed_values()
+            for elem in self.nodes:
+                FOUND = False
+
+                for e in self.consensus_events[msg_id]:
+                    if(elem in e):
+                        FOUND = True
+                        break
+                     
+                if(not FOUND):
+                    v = self.nodes[elem].is_chosen(msg_id) 
+
+                    if(v != False):
+                        self.consensus_events[msg_id].append({elem : v})
+
+        print(f"Graph {self.id} > consensus reached : {self.consensus_events[msg_id]}")
+        return self.consensus_events[msg_id]
+        
     def print_agreed_values(self):
         for node in self.nodes:
-            print(f"Node {self.nodes[node].get_id()} : {self.nodes[node].get_value()}")
+            print(f"Node {node} § ", end = "")
+            self.nodes[node].get_values()
+            print(f"{self.nodes[node].cons.values}\n")
+            
+            # while(self.nodes[node].get_cons_status() == False):
+            #     pass
+            
+            # print(f"Node {self.nodes[node].get_id()} : {self.nodes[node].get_value()}")
+
+    def setup_consensus_event(self, msg_id):
+        if(msg_id not in self.cons_events):
+            self.cons_events.update[msg_id] = {}
 
     def cleanup(self):
         for node in self.nodes:

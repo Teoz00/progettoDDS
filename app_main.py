@@ -1,6 +1,7 @@
 from app_graph import ApplicationGraph
 
 import sys
+import time
 import os
 
 def directory_cleaner():
@@ -22,12 +23,17 @@ def directory_cleaner():
         print("\nError while cleaning 'txt_files' directory")
 
 
-
+sys.setrecursionlimit(10**9)
 g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
-#g.plot_graph()
-g.get_consensus_processes(0)
+# g.plot_graph()
+g.get_consensus_processes(0, 'test4consensus')
 
 input("")
+
+# for elem in g.app_nodes:
+#     print(f"{g.app_nodes[elem]} > ")
+#     # g.app_nodes[elem].print_cons()
+#     print()
 
 g.stop_event.set()
 g.cleanup()

@@ -16,14 +16,16 @@ class Consensus:
     
     def print_status(self, msg_id):
         if(msg_id in self.commanders):
-            print(f"Node {self.id} - Consensus_module : status for {msg_id} [{self.commanders[msg_id]} - values: {self.values[msg_id]}]")
+            print(f"Node {self.id} - Consensus_module : status for {msg_id} [{self.commanders[msg_id]}") # - values: {self.values[msg_id]}] - chosen: {self.check_values(msg_id)}, {self.already_chosen(msg_id)}")
+            if(self.check_values(msg_id) and not self.already_chosen(msg_id)):
+                self.choose_value(msg_id)
     
     # structure of message to handle: [ROLE, VALUE, ]
     def handle_msg(self, message, msg_id, peer_id):
         # print(f"\nNode {self.id} - Consensus_module: {message} received")
         role = message[1]
         value = message[2]
-        # print(f"Node {self.id} - Consensus_module: role {role}, value {value}")
+        print(f"Node {self.id} - Consensus_module: role {role}, value {value}")
         
         if(msg_id not in self.values):
             self.values[msg_id] = {}
@@ -94,7 +96,12 @@ class Consensus:
             return None
         
     def check_values(self, msg_id):
+        # print(f"self values: {self.values} vs msg_id : {msg_id} --> {msg_id in self.values}, {len(self.values[msg_id])}")
+
         if(msg_id in self.values):
+            # self.print_status(msg_id)
+            # print(f"Node {self.id} - Consensus_module : len of self.values[{msg_id}] = {len(self.values[msg_id])}")
+            
             if(len(self.values[msg_id]) == self.number_nodes - 1):
                 return True
             
@@ -113,8 +120,15 @@ class Consensus:
 
         return False
     
+    def get_val(self, msg_id):
+        if(self.already_chosen(msg_id)):
+            return self.chosen_values[msg_id]
+        elif(self.check_values(msg_id)):
+            v = self.choose_value(msg_id)
+            if(v != None):
+                return v
+
+        return False
+    
     def get_chosen_values(self):
-        if(self.chosen_values == {}):
-            return False
-        
         return self.chosen_values
