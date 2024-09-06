@@ -13,7 +13,7 @@ from RSM import RSM
 
 class Node:
     def __init__(self, my_id, my_addr, neighbors, all, delay, event):
-        threading.stack_size(10**8)
+        threading.stack_size(10**10)
         self.id = my_id
         
         # it contains all pp2p links needed for communicating with neighbors, dictionary

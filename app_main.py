@@ -23,7 +23,7 @@ def directory_cleaner():
         print("\nError while cleaning 'txt_files' directory")
 
 
-sys.setrecursionlimit(10**9)
+sys.setrecursionlimit(2147483647)
 g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 # g.plot_graph()
 g.get_consensus_processes(0, 'test4consensus')
