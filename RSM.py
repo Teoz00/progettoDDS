@@ -4,6 +4,7 @@ class RSM:
     def __init__(self):
         self.STATE = ["WAITING", "LISTENING", "BUSY", "EXECUTING"] #MACRO -- per ogni stato passato dal server mi serve un checksum
         self.ACTUAL_STATE = None
+        self.ACTIONS = ["SUM", "MULL", "DIVIDING"] #Basic operations
         self.event = set() #EventInputs -- replicas at most 2N + 1 
         self.correct = []
         self.faulty = []
@@ -73,6 +74,15 @@ class RSM:
     def typeFun(self, value): #example function / better 
         return type(value) 
     
+    def funOperation(self, type, a, b): 
+        match type:
+            case "SUM" :
+                return a + b
+            case "MULL":
+                return a * b
+            case "DIVIDE":
+                return a / b
+    
     def outputGenerator(self, inputFunction):
         for e in self.correct:
             self.output.append(inputFunction(e))
@@ -93,7 +103,6 @@ class RSM:
                     return False
         return True
 
-"""
     def printEvent(self, type):
         # print("self.event: ", self.event)
         match type:
@@ -103,7 +112,7 @@ class RSM:
                         print(f"Event {events} > index: {str(events.get_index())}\t type: {str(events.get_type())}")
             case "test":
                 pass
-"""
+
 
 ###############################################################
 #NB, per usare questo test, commentare |self.checkpoint = {event : [event.get_ts(), "LISTENING"] } #mi salvo il timestamp|
