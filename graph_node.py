@@ -57,7 +57,7 @@ class Node:
         
         self.pfd = PerfectFailureDetector()
         self.cons = Consensus(self.id, self.nodes_into_network)
-        self.rsm = RSM()
+        self.rsm = RSM(self.nodes_into_network)
         
         # if(delay == None):
         #     self.delay = 0.005
@@ -762,6 +762,14 @@ class Node:
                     self.send_to(type, neigh['neigh'], msg, [elem], msg_id, self.id)
                     # self.rsm.printEvent()
     
+    ####### RSM METHODS #######
+
+    def recv_input_rsm(self, event_set):
+        res = self.rsm.setInput(event_set)
+        print(f"Node {self.id} - RSM $ final input status : {res}")
+
+    ###########################
+
     # perfect failure detector
     def pfd_caller(self):
         msg_id = str(uuid.uuid4())

@@ -1,7 +1,8 @@
 class EventP:
-    def __init__(self, t, index, vc, msg):
+    def __init__(self, t, index, id, vc, msg):
         self.type = t #Send receive
         self.index = index
+        self.id = id
         self.ts = vc #NB vc is a vc list
         self.msg = msg
         

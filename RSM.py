@@ -1,16 +1,24 @@
 from event_process import EventP
 
 class RSM:
-    def __init__(self):
+    def __init__(self, num_nodes):
         self.STATE = ["WAITING", "JOIN", "QUIT", "CHECKPOINT"] #MACRO -- per ogni stato passato dal server mi serve un checksum
         self.ACTUAL_STATE = None
         self.ACTIONS = ["SUM", "MULL", "DIVIDING"] #Basic operations
+        
         self.event = set() #EventInputs -- replicas at most 2N + 1 
+        
         self.correct = []
         self.faulty = []
+        
         self.inputLog = [] # for every event following the code order
         self.checkpoint = {} #events catcher / backupEvetns -- dizionario di liste {"event" : [ts,state]}
         self.output = []
+
+        self.ts = 0
+        self.num_nodes = num_nodes
+        self.internal_vector_clock = []
+
         #self.input  #client request
         #output something
         #ordering among events (Input in same order)  
@@ -28,12 +36,14 @@ class RSM:
 
     def addEvent(self, event):
         self.ACTUAL_STATE = "BUSY"
+        
         self.event.add((event, event.get_msg()))
         self.correct.append(event)
         #print(self.correct)
         self.checkpoint = {event : [event.get_ts(), event.type] } #mi salvo il timestamp
         self.inputLog.append(event) #I keep trace of my input
-        #self.ACTUAL_STATE = "LISTENING"
+        
+        self.ACTUAL_STATE = "LISTENING"
 
     def updateEvent(self,event):
         self.checkpoint = {event : [event.get_ts(), event.ACTUAL_STATE]}
@@ -41,6 +51,8 @@ class RSM:
     def setInput(self, event_set):
         for elem in event_set:
             self.addEvent(elem)
+        
+        return True
 
     def getEventCheck(self, event):
         return self.checkpoint[str(event)]
@@ -67,8 +79,10 @@ class RSM:
         self.output = []
         self.checkpoint = checkpoint
         
-        self.ACTUAL_STATE = "RECONFIGURED"
+        self.inputLog.append(" - RECONFIGURED - ")
+        self.inputLog.append(log)
 
+        self.ACTUAL_STATE = "RECONFIGURED"
          
     #def quitting(self, eventToRemove):
         #neigh = eventToRemove.neighbors
@@ -102,24 +116,36 @@ class RSM:
     def typeFun(self, value): #example function / better 
         return type(value) 
     
-    # simulation of send/recv of messages for executing a list of operations
-    def funOperation(self, type, a, b): 
+    # simulation of send/recv/crash for executing a list of operations
+    def funOperation(self, type, a, msg): 
         match type:
-            case "SUM" :
-                return a + b
-            case "MULL":
-                return a * b
-            case "DIVIDE":
-                return a / b
-    
-    def outputGenerator(self, inputFunction):
-        for e in self.correct:
-            self.output.append(inputFunction(e))
+            case "SEND", "RECV":
+                self.update_vc(a)
+                self.addEvent(EventP(self.ts, (len(self.event) - 1), self.internal_vector_clock, str([type, a, msg])))
+                self.ts += 1
+            
+            case "CRASH":
+                i = 0
+                
+                while i < self.num_nodes:
+                    if(i != int(a)):
+                        self.update_vc(i)
+                        self.addEvent(EventP(self.ts, (len(self.event) - 1), self.internal_vector_clock, str(["RECV", a, type])))
+                        self.ts += 1
+                    
+                    i += 1
 
-    def checkCorrectness(self, inputFunction): #inputFunction is fun / I think I need the consensous! -- QUIT
+
+    def outputGenerator(self, inputFunction, type, a, msg):
+        for e in self.correct:
+            self.output.append(inputFunction(type, a, msg))
+
+    def checkCorrectness(self, type, a, msg): #inputFunction is fun / I think I need the consensous! -- QUIT
         # check if its final result is the same of the agreed one after consensus
-        
-        self.outputGenerator(inputFunction)
+        for e in self.correct:
+            self.outputGenerator(self.funOperation, e.get_type(), None, None)
+
+
 
         for elem in range(len(self.output)):
             for elem2 in range(len(self.output)):
@@ -135,7 +161,11 @@ class RSM:
                     self.correct.remove(self.correct[elem2])
                     print (f"|CORRECT AFTER: {self.correct}|")
                     return False
+        
         return True
+
+    def update_vc(self, node):
+        self.vc[int(node)] += 1
 
     def printEvent(self, type):
         # print("self.event: ", self.event)
