@@ -140,12 +140,12 @@ class RSM:
         for e in self.correct:
             self.output.append(inputFunction(type, a, msg))
 
-    def checkCorrectness(self, type, a, msg): #inputFunction is fun / I think I need the consensous! -- QUIT
+    def checkCorrectness(self): 
+        #inputFunction is fun / I think I need the consensous! -- QUIT
         # check if its final result is the same of the agreed one after consensus
+        
         for e in self.correct:
-            self.outputGenerator(self.funOperation, e.get_type(), None, None)
-
-
+            self.outputGenerator(self.funOperation, e.get_type(), e.get_id(), e.get_msg())
 
         for elem in range(len(self.output)):
             for elem2 in range(len(self.output)):
@@ -181,10 +181,10 @@ class RSM:
 ###############################################################
 #NB, per usare questo test, commentare |self.checkpoint = {event : [event.get_ts(), "LISTENING"] } #mi salvo il timestamp|
 #Ed usare python RSM.py
-rsm = RSM()
+rsm = RSM(5)
 
-event1 = EventP("send", 1, [4, 3, 5], "Ciao1")
-event2 = EventP("send", 1, [4, 3, 5], "Ciao2")
+event1 = EventP("SEND", 1, 0, [4, 3, 5], "Ciao1")
+event2 = EventP("SEND", 1, 1, [4, 3, 5], "Ciao2")
  
 #rsm.addEvent("1")
 #rsm.addEvent("2")
@@ -192,6 +192,6 @@ event2 = EventP("send", 1, [4, 3, 5], "Ciao2")
 rsm.addEvent(event1)
 rsm.addEvent(event2) 
 
-rsm.checkCorrectness(rsm.typeFun)
+rsm.checkCorrectness()
 ##################################################
 

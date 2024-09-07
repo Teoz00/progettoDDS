@@ -12,6 +12,9 @@ class EventP:
     def get_index(self):
         return self.index
     
+    def get_id(self):
+        return self.id
+    
     def get_ts(self): 
         return self.ts
     

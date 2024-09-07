@@ -65,7 +65,7 @@ class Node:
         #     self.delay = 1.0
         
         if(self.id == 5):
-            self.delay = 3.0
+            self.delay = 0.010
         else:
             self.delay = 0.005
 
@@ -187,7 +187,7 @@ class Node:
                         self.sent_to[message_id][peer_id].append([shortestPath, origin])
 
                         typeOf = "send-"+type
-                        self.eventGenerating(msg, typeOf)
+                        self.eventGenerating(msg, self.id, typeOf)
                         
                         #self.pending_acks[message_id] = (msg, shortestPath, peer_id, time.time())
                         # self.ack_flags[message_id] = False  # Initialize ack flag to False
@@ -237,7 +237,7 @@ class Node:
                                             self.links[str(elem['neigh'])].send(str([type, msg, shortestPath, self.vectorClock, message_id]))
                                             
                                             typeOf = "send-" + type
-                                            self.eventGenerating(msg, typeOf)
+                                            self.eventGenerating(msg, self.id,typeOf)
                                             
                                             self.pending_acks["ACK"].update({message_id:0})
                                             
@@ -246,9 +246,9 @@ class Node:
                                             # self.message_sent_flags[message_id] = True  # Mark message as sent
                                             
                                             #print(f"Node {self.id} forwarded message {msg} with ID {message_id} to {elem['neigh']}")
-                                            typeOf = "send-" + type
-                                            self.sent_to[message_id][next_hop].append([shortestPath, origin])
-                                            self.eventGenerating(msg, typeOf)
+                                            # typeOf = "send-" + type
+                                            # self.sent_to[message_id][next_hop].append([shortestPath, origin])
+                                            # self.eventGenerating(msg, typeOf)
                                             break
                             
                     # OLD IMPLEMENTATION
@@ -303,7 +303,6 @@ class Node:
                                         
                     # TODO
                     typeOf = "receive-" + type
-                    self.eventGenerating(msg, typeOf)
                     
                     # wide usage of switch-case pattern for recognise type of message listened
                     match type:
@@ -311,7 +310,8 @@ class Node:
                         # case for simple message to send to a certain node, it behaves as usual
                         case "SIMPLE":
                             if(len(shortPath) > 1):
-                                
+                                self.eventGenerating(msg, shortPath.index(self.id) -1, typeOf)
+    
                                 node_id = shortPath[shortPath.index(self.id) - 1]
                                 print(f"from {node_id}")
                                 
@@ -352,7 +352,8 @@ class Node:
                                 # if a neighbor specifically sends something to me
                                 if(FOUND):
                                     print(f"from {peer_id}")
-                                    
+                                    self.eventGenerating(msg, peer_id, typeOf)
+
                                     ALREADY_RECVD = False
                                     
                                     for elem in self.received_with_id:
@@ -630,8 +631,8 @@ class Node:
             link.close()
 
     # generates event for msg with specified type
-    def eventGenerating(self, msg, type):
-        event = EventP(type, len(self.event_set), self.vectorClock, msg)
+    def eventGenerating(self, msg, id, type):
+        event = EventP(type, len(self.event_set), id, self.vectorClock, msg)
         self.event_set.append(event) 
         self.rsm.addEvent(event)
         #print(f"EventSet{self.id}:{self.event_set}")
