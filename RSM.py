@@ -2,7 +2,7 @@ from event_process import EventP
 
 class RSM:
     def __init__(self):
-        self.STATE = ["WAITING", "LISTENING", "BUSY", "EXECUTING"] #MACRO -- per ogni stato passato dal server mi serve un checksum
+        self.STATE = ["WAITING", "JOIN", "QUIT", "CHECKPOINT"] #MACRO -- per ogni stato passato dal server mi serve un checksum
         self.ACTUAL_STATE = None
         self.ACTIONS = ["SUM", "MULL", "DIVIDING"] #Basic operations
         self.event = set() #EventInputs -- replicas at most 2N + 1 
@@ -27,13 +27,13 @@ class RSM:
         #EXTENSION: 
 
     def addEvent(self, event):
-        self.ACTUAL_STATE = "BUSY"
+        #self.ACTUAL_STATE = "BUSY"
         self.event.add(event) 
         self.correct.append(event)
         #print(self.correct)
         self.checkpoint = {event : [event.get_ts(), event.type] } #mi salvo il timestamp
         self.inputLog.append(event) #I keep trace of my input
-        self.ACTUAL_STATE = "LISTENING"
+        #self.ACTUAL_STATE = "LISTENING"
 
     def updateEvent(self,event):
         self.checkpoint = {event : [event.get_ts(), event.ACTUAL_STATE]}
@@ -46,27 +46,40 @@ class RSM:
         return self.checkpoint[str(event)]
 
     def getState(self):
-        return self.STATE #oppure self.ACTUAL_STATE TODO
+        return self.ACTUAL_STATE #oppure self.ACTUAL_STATE TODO
 
     def reconfiguration(self):
-        pass
+        self.ACTUAL_STATE = "IDLE"
+        self.output = []
+        self.checkpoint = {}
+        
 
-    def quitting(self, eventToRemove):
-        neigh = eventToRemove.neighbors
-        if (len(neigh) >= 0):
-            before = neigh[0]
-            if (len(neigh) >= 1): 
-                after = neigh[1]
-                before.neighbors.add(after)
-                after.neighbors.add(before)
-                before.neighbors.remove(eventToRemove)
-            else:
-                before.neighbors.remove(eventToRemove)
+         
+    #def quitting(self, eventToRemove):
+        #neigh = eventToRemove.neighbors
+        #if (len(neigh) >= 0):
+         #   before = neigh[0]
+         #   if (len(neigh) >= 1): 
+         #       after = neigh[1]
+         #       before.neighbors.add(after)
+         #       after.neighbors.add(before)
+         #       before.neighbors.remove(eventToRemove)
+         #   else:
+         #       before.neighbors.remove(eventToRemove)
 
-        self.event.remove(eventToRemove)
+        #self.event.remove(eventToRemove)
+    #restart, restore or new
+    def join(self, event, type):
+        match type:
+            case "RESTART", "NEW":
+                self.ACTUAL_STATE = type
+                self.updateEvent(event)
+                self.inputLog(type+"ed"+event) #to handle with a parsing 
+            case "RESTORE":
+                self.ACTUAL_STATE = "RESTORE"
+                self.updateEvent(self.checkpoint)
+                self.inputLog("RESTORED:"+event) #Parsing
 
-    def join():
-        pass
 
     def restore(self, event):
         self.addEvent(EventP(event.getEventCheck()))
@@ -87,7 +100,7 @@ class RSM:
         for e in self.correct:
             self.output.append(inputFunction(e))
 
-    def checkCorrectness(self, inputFunction): #inputFunction is fun / I think I need the consensous!
+    def checkCorrectness(self, inputFunction): #inputFunction is fun / I think I need the consensous! -- QUIT
         self.outputGenerator(inputFunction)
 
         for elem in range(len(self.output)):
@@ -95,9 +108,12 @@ class RSM:
                 if self.output[elem] == self.output[elem2]:
                     print("Correct")
                 else:
+                    self.ACTUAL_STATE = "QUIT"
                     print("NOT Correct")
                     print(f"|CORRECT BEFORE: {self.correct}|")
                     print(f"********************\nRSM --> faulty\nThe following output1 /{self.correct[elem]}/: {self.output[elem]}\nis different by output2 /{self.correct[elem2]}/ {self.output[elem2]}\n********************")
+                    self.checkpoint = {self.correct[elem2] : [self.correct[elem2].get_ts(), self.correct[elem2].type] }
+                    self.faulty.add(self.correct[elem2])
                     self.correct.remove(self.correct[elem2])
                     print (f"|CORRECT AFTER: {self.correct}|")
                     return False
