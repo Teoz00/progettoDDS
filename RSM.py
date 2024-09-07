@@ -48,11 +48,26 @@ class RSM:
     def getState(self):
         return self.ACTUAL_STATE #oppure self.ACTUAL_STATE TODO
 
-    def reconfiguration(self):
-        self.ACTUAL_STATE = "IDLE"
-        self.output = []
-        self.checkpoint = {}
+
+    def reconfiguration(self, checkpoint, corrects, faulties, log):
+        # from Wikipedia.com :
+        # Reconfiguration allows replicas to be added and removed from a system while client requests continue to be processed. 
+        # Planned maintenance and replica failure are common examples of reconfiguration. 
+        # Reconfiguration involves Quitting and Joining.
+
+        # with interpretation for this project, 
+        # reconfiguration in intended as
+        # a particular situation of the restart 
         
+        self.ACTUAL_STATE = "RECONFIGURING"
+
+        self.correct = corrects
+        self.faulty = faulties
+
+        self.output = []
+        self.checkpoint = checkpoint
+        
+        self.ACTUAL_STATE = "RECONFIGURED"
 
          
     #def quitting(self, eventToRemove):
@@ -74,11 +89,11 @@ class RSM:
             case "RESTART", "NEW":
                 self.ACTUAL_STATE = type
                 self.updateEvent(event)
-                self.inputLog(type+"ed"+event) #to handle with a parsing 
+                self.inputLog(type+"ED: "+event) #to handle with a parsing 
             case "RESTORE":
                 self.ACTUAL_STATE = "RESTORE"
                 self.updateEvent(self.checkpoint)
-                self.inputLog("RESTORED:"+event) #Parsing
+                self.inputLog("RESTORED: "+event) #Parsing
 
 
     def restore(self, event):
@@ -87,6 +102,7 @@ class RSM:
     def typeFun(self, value): #example function / better 
         return type(value) 
     
+    # simulation of send/recv of messages for executing a list of operations
     def funOperation(self, type, a, b): 
         match type:
             case "SUM" :
@@ -101,6 +117,8 @@ class RSM:
             self.output.append(inputFunction(e))
 
     def checkCorrectness(self, inputFunction): #inputFunction is fun / I think I need the consensous! -- QUIT
+        # check if its final result is the same of the agreed one after consensus
+        
         self.outputGenerator(inputFunction)
 
         for elem in range(len(self.output)):

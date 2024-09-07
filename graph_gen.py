@@ -161,6 +161,10 @@ class Graph:
         
     def pfd_test(self, origin):
         self.nodes[origin].pfd_caller()
+
+    def pfd_single_result(self, node_id):
+        if(node_id in self.nodes):
+            return self.nodes[node_id].pfd_caller()
         
     def set_same_input_rsm(self, event_set):
         for node in self.nodes:
@@ -208,6 +212,9 @@ class Graph:
     def setup_consensus_event(self, msg_id):
         if(msg_id not in self.cons_events):
             self.cons_events.update[msg_id] = {}
+
+    def get_size(self):
+        return len(self.nodes)
 
     def cleanup(self):
         for node in self.nodes:

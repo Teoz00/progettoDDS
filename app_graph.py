@@ -5,6 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import uuid
 import threading
+import random
 import time
 
 ###
@@ -54,6 +55,28 @@ class ApplicationGraph:
             self.app_nodes[node] = ApplicationProcess(detailed_app_nodes_list[node]['id'], detailed_app_nodes_list[node]['ip'], detailed_app_nodes_list[node]['ports'], nodes_per_subgraph, port_counter, self.stop_event)
             port_counter = self.app_nodes[node].get_port_counter()
     
+    def check_faulties_thread_starter(self, app_id, node_id, event, list_for_corrects):
+        list_for_corrects.append([node_id, self.app_nodes[app_id].check_faulties(node_id)])
+        event.set()
+    
+    def check_faulties(self):
+        events = []
+        list_for_corrects = []
+
+        for elem in self.app_nodes:
+            event_for_thr = threading.Event()
+            events.append(event_for_thr)
+            thr = threading.Thread(target=self.check_faulties_thread_starter, args=(elem, random.randint(0, self.app_nodes[elem].get_num_nodes()-1), event_for_thr, list_for_corrects))
+            thr.start()
+
+        counter = 0
+        while(counter < len(self.app_nodes)):
+            # time.sleep(2.5)
+            counter = 0
+            for elem in events:
+                if(elem.is_set()):
+                    counter += 1
+
     def get_consensus_thread_starter(self, node_id, id, msg_id, value, event):
         self.consensus_events[msg_id].append([node_id, self.app_nodes[node_id].get_consensus(id, msg_id, value)])
         event.set()

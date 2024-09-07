@@ -23,9 +23,15 @@ class ApplicationProcess:
         print(f"ApplicationProcess {self.id} > consensus list {cons}")
         return cons
 
+    def get_num_nodes(self):
+        return self.subgraph.get_size()
+
     def print_cons(self):
         # print("print_cons invoked")
         self.subgraph.print_agreed_values()
+
+    def check_faulties(self,node_id):
+        return self.subgraph.pfd_single_result(node_id)
 
     def plot_graph(self):
         self.subgraph.plot_graph()

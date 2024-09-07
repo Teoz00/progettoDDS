@@ -59,16 +59,16 @@ class Node:
         self.cons = Consensus(self.id, self.nodes_into_network)
         self.rsm = RSM()
         
-        self.delay = 0.005
-
         # if(delay == None):
-        #     self.delay = 0.001
+        #     self.delay = 0.005
         # else:
-        #     self.delay = 0.001
+        #     self.delay = 1.0
         
-        # if(self.id == 5):
-        #     self.delay = 3.0
-        
+        if(self.id == 5):
+            self.delay = 3.0
+        else:
+            self.delay = 0.005
+
         for elem in neighbors:
             # print(my_addr + ":" + str(elem['port']), my_addr)
             link_addr = f"{my_addr}:{elem['port']}"
@@ -411,7 +411,12 @@ class Node:
                                                                 # print(f"Node {self.id} : checking if commander... {self.cons.am_I_a_commander(message_id)}")
                                                                 if(not(self.cons.am_I_a_commander(message_id))):
                                                                     self.send_to(type, self.cons.get_commander(message_id), str('["CONSENSUS", "LIEUTANT", ' + str(val) + ', ]'), [origin], message_id, self.id)
-                                                            
+
+                                                    case "REMOVE_ME":
+                                                        if(origin in self.corrects):
+                                                            self.corrects.remove(origin)
+                                                            self.cons.set_num_nodes(self.get_num_nodes() - 1)
+
                                                     case _:
                                                         self.send_to("ACK", peer_id, msg, [origin], message_id, self.id)
                                         
@@ -499,7 +504,6 @@ class Node:
                                     # self.stop_event.set()
                                 else:
                                     next_hop = shortPath[shortPath.index(self.id) + 1]
-                                    
                                     node_id = shortPath[shortPath.index(self.id) - 1]
                                 
                                     if(node_id not in self.received_with_id):
@@ -578,7 +582,7 @@ class Node:
                                         if(len(self.acks_received[message_id]) == (self.nodes_into_network - 1)):
                                             # print(self.acks_received[message_id])
                                             print(f"\nNode {self.id} : self.acks_received[{message_id}]: {self.acks_received}\n")
-                                            print(f"Node {self.id} > STOP")
+                                            # print(f"Node {self.id} > STOP")
                                             # self.termination_print()
                                             # self.stop_event.set()
                                             
@@ -610,18 +614,6 @@ class Node:
             if node_link == link:
                 return node_id
         return "unknown" # If link not found, return default value
-     
-    # def handle_input(self):
-    #     while self.running:
-    #         command = input(f"Node {self.id} > ")
-    #         if command.startswith("send"):
-    #             _, target_id, message = command.split(maxsplit=2)
-    #             target_id = int(target_id)
-    #             self.send_to(target_id, message, shortestPath=[self.id, target_id])  # Provide shortestPath
-    #         elif command == "exit":
-    #             self.running = False
-    #         else:
-    #             print("Invalid command")
                                 
     def get_neighbors(self):
         return self.neighbors
@@ -769,17 +761,8 @@ class Node:
                     # if(neigh['neigh'] not in already_sent_to):
                     self.send_to(type, neigh['neigh'], msg, [elem], msg_id, self.id)
                     # self.rsm.printEvent()
-
-            # already_sent_to.append(elem)
-            # print(f"already_sent_to : {already_sent_to}")
-                    
-        # for neigh in self.neighbors:
-        #     for i in range(0, self.nodes_into_network):
-        #         if(i != self.id):                        
-        #             self.send_to(type, neigh['neigh'], msg, [i], msg_id, self.id)
-                    
     
-    # simulation of perfect failure detector
+    # perfect failure detector
     def pfd_caller(self):
         msg_id = str(uuid.uuid4())
         self.pfd.start_pfd(self.corrects, msg_id, self.delay * (2 * self.nodes_into_network))
@@ -789,12 +772,22 @@ class Node:
         
         if(self.pfd.get_flag()):
             print(f"pfd.get_flag = {self.pfd.get_flag()} - corrects : {self.pfd.get_new_corrects()}")
+            tmp = self.corrects
             self.corrects = self.pfd.get_new_corrects()
             print(f"Node {self.id} > new corrects: {self.corrects}")
+
+            faulties = set(self.corrects)
+            temp3 = [x for x in tmp if x not in faulties]
+            print(temp3)
+            return temp3
         
         elif(self.pfd.get_flag() == "AUG_DELAY"):
-            self.pfd_caller()    
-    
+            return self.pfd_caller()
+
+    def am_I_correct(self):
+        # if(not(self.rsm.checkCorrectness(...)):
+        #       self.specialBC_Node("REMOVE_ME", None)
+        pass
 
     def asking_for_consensus_commander(self, id, value):
         if id == None:

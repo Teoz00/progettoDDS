@@ -132,3 +132,13 @@ class Consensus:
     
     def get_chosen_values(self):
         return self.chosen_values
+    
+    def get_num_nodes(self):
+        return self.number_nodes
+    
+    def set_num_nodes(self, n):
+        if(n < 0):
+            print("Impossible to set this number of nodes!!!")
+            return
+        
+        self.number_nodes = n
