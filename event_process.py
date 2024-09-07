@@ -14,4 +14,7 @@ class EventP:
     def get_ts(self): 
         return self.ts
     
+    def get_msg(self):
+        return self.msg
+    
 

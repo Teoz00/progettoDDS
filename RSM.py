@@ -27,8 +27,8 @@ class RSM:
         #EXTENSION: 
 
     def addEvent(self, event):
-        #self.ACTUAL_STATE = "BUSY"
-        self.event.add(event) 
+        self.ACTUAL_STATE = "BUSY"
+        self.event.add((event, event.get_msg()))
         self.correct.append(event)
         #print(self.correct)
         self.checkpoint = {event : [event.get_ts(), event.type] } #mi salvo il timestamp
