@@ -11,6 +11,37 @@ Detecting Causality in the Presence of Byzantine Processes
 #7 LASKALSJ : This matrix is used to track and order events across different processes in such a system.
 #8 RSM (replication set machine) ==> implied such module RSM.py (class with finite state + FIFO + agreememt)
 
+###IDEA: macro-nodes containing graph of RSMs, each of them receives a set of events coming from macro-node (above level) and elaborates it,
+###consensus between RSMs, macro-nodes communicate also something an RSM may decide to send out the ensemble if consensus is reached(macro-node)
+
+    -------------------------
+    |   APPLICATION GRAPH   |
+    -------------------------
+        ^           |
+        |           ˇ
+    -------------------------
+    |  APPLICATION PROCESS  |
+    -------------------------
+        ^           |
+        |           ˇ
+    -------------------------
+    |       GRAPH           |
+    -------------------------
+        ^           |
+        |           ˇ
+    -------------------------
+    |       GRAPH NODE      |  ----------
+    -------------------------   <-----| |
+      ^   |   ^   |    ^  |           | |
+      |   ˇ   |   ˇ    |  ˇ           | |
+    -------- -------  -------         | |
+    | CONS | | RSM |  | PFD |         | |
+    -------- -------  -------         | |
+      ^ |      ^ |      ^ |           | |
+      | ˇ      | ˇ      | ˇ           | |
+    -------------------------         | |
+    |         PP2P          |   ------- |
+    -------------------------   <--------
 
 ###OPTIONAL: review graph init assigning of tcp ports for nodes connections since there might be some issues 
 
