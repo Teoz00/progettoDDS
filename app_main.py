@@ -25,9 +25,13 @@ def directory_cleaner():
 
 sys.setrecursionlimit(2147483647) # max int C as parameter
 g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
+
 # g.plot_graph()
-# g.get_consensus_processes(0, 'test4consensus')
-# g.check_faulties()
+g.check_faulties()
+input("")
+g.get_consensus_processes(0, 'test4consensus')
+input("")
+g.app_nodes[0].app_proc_broadcast("First broacast!")
 input("")
 
 # for elem in g.app_nodes:

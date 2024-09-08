@@ -12,8 +12,9 @@ import time
 
 class ApplicationGraph:
     def __init__(self, num_apps, t_byzantine):
-        
-        self.app_graph = self.G = nx.erdos_renyi_graph(n=num_apps, p=0.75, seed=42)
+
+        self.app_graph = nx.complete_graph(num_apps)
+        # self.app_graph = nx.erdos_renyi_graph(n=num_apps, p=0.75, seed=42)
         self.stop_event = threading.Event()
         
         ip = "127.0.0.1"
@@ -39,7 +40,7 @@ class ApplicationGraph:
                     port_counter += 2
 
         for node in self.app_nodes_list:
-            print(node)
+            # print(node)
             ports_for_node = []
             for (node1, node2), port in self.port_map.items():
                 if node1 == node:
@@ -52,9 +53,17 @@ class ApplicationGraph:
         # self.consensus_events[detailed_app_nodes_list[node]['id']]
 
         for node in detailed_app_nodes_list:
-            self.app_nodes[node] = ApplicationProcess(detailed_app_nodes_list[node]['id'], detailed_app_nodes_list[node]['ip'], detailed_app_nodes_list[node]['ports'], nodes_per_subgraph, port_counter, self.stop_event)
+            for elem in detailed_app_nodes_list[node]['ports']:
+                neigh_id = elem['neigh']
+                for neighbor in detailed_app_nodes_list[neigh_id]['ports']:
+                    elem.update({"neigh_ip": ip})
+                    if neighbor['neigh'] == node:
+                        elem.update({"neigh_port": neighbor['port']})
+
+            self.app_nodes[node] = ApplicationProcess(detailed_app_nodes_list[node]['id'], detailed_app_nodes_list[node]['ip'], detailed_app_nodes_list[node]['ports'], nodes_per_subgraph, num_apps, port_counter, self.stop_event)
             port_counter = self.app_nodes[node].get_port_counter()
     
+
     def check_faulties_thread_starter(self, app_id, node_id, event, list_for_corrects):
         list_for_corrects.append([node_id, self.app_nodes[app_id].check_faulties(node_id)])
         event.set()
@@ -109,9 +118,9 @@ class ApplicationGraph:
                 print("\t", elem)
 
     def plot_graph(self):
-        pos = nx.spring_layout(self.G)
+        pos = nx.spring_layout(self.app_graph)
         plt.title("Application Graph")
-        nx.draw(self.G, pos, with_labels=True, node_color='#ffc72b', node_size= 1200, edge_color='#4a4a4a')
+        nx.draw(self.app_graph, pos, with_labels=True, node_color='#ffc72b', node_size= 1200, edge_color='#4a4a4a')
         plt.show()
 
         for elem in self.app_nodes:

@@ -31,7 +31,8 @@ class Graph:
         # self.G = nx.random_tree(num_nodes)
         # self.G = nx.erdos_renyi_graph(n=num_nodes, p=0.75, seed=int((time.time() / 10000) % 10000))
 
-        self.G = nx.erdos_renyi_graph(n=num_nodes, p=0.5, seed=43)
+        self.G = nx.erdos_renyi_graph(n=num_nodes, p=0.5, seed=int(time.time()))
+        # self.G = nx.complete_graph(num_nodes)
         
         # while not nx.is_connected(self.G):
         #     (u, v) = (np.random.randint(0, num_nodes), np.random.randint(0, num_nodes))
