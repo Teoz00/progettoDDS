@@ -1,9 +1,12 @@
 from graph_gen import Graph
 from pp2p import PerfectPointToPointLink
+from consensus import Consensus
+from pfd import PerfectFailureDetector
 
 import threading
 import ast
 import uuid
+import time
 
 class ApplicationProcess:
     def __init__(self, my_id, my_addr, neighbors, number_node, num_apps, base_port, stop_event):
@@ -12,8 +15,10 @@ class ApplicationProcess:
 
         self.my_addr = my_addr
         self.neighbors = neighbors
+        self.corrects = []
         self.num_nodes = number_node
         self.num_apps = num_apps
+        self.delay = 0.005
 
         self.running = False
         self.listener_threads = {}
@@ -34,6 +39,9 @@ class ApplicationProcess:
 
         self.stop_event = stop_event
 
+        self.pfd = PerfectFailureDetector()
+        self.cons = Consensus(self.id, num_apps)
+
         for elem in neighbors:
             link_addr = f"{my_addr}:{elem['port']}"
             neigh_addr = f"{elem['neigh_ip']}:{elem['neigh_port']}"
@@ -48,6 +56,10 @@ class ApplicationProcess:
             except Exception as e:
                 print(f"Catched: {e} while starting thread at {self.id}:{elem['port']}")
                 # self.cleanup()
+
+        for i in range(0, self.num_apps):
+            if(i != self.id):
+                self.corrects.append(i)
 
         # self.subgraph.set_same_input_rsm(None)
 
@@ -76,33 +88,42 @@ class ApplicationProcess:
                 self.manage_vector_clock(vc)
                 self.vectorClock[self.id] += 1
 
-                FOUND = False
-
                 match type:
                     case "SIMPLE":
                         if(self.links[str(origin)] == link):
-                            self.app_proc_send_to("ACK", origin, msg, message_id, self.id)
+
+                            if(msg == "HeartBeatRequest"):
+                                self.app_proc_send_to("ACK", origin, "HeartBeatReply", message_id, self.id)
+                            else:
+                                m = ast.literal_eval(msg)
+                                self.app_proc_send_to("ACK", origin, msg, message_id, self.id)
                     
                     case "ACK":
                         if message_id not in self.received_acks:
+                            print("ACK -> ", msg)
                             self.received_acks.update({message_id : []})
-                        
+
+                            if (msg == "HeartBeatReply"):
+                                self.pfd.append_ack(message_id, origin)
+        
                         if(origin not in self.received_acks[message_id]):
                             self.received_acks[message_id].append(origin)
                             print(f"ApplicationProcess {self.id} : acks-status for {message_id} -> {self.received_acks[message_id]}")
 
-    def app_proc_send_to(self, type, peer_id, msg, msg_id, origin):
-        print(f"ApplicationProcess {self.id} > sending [{type, peer_id, msg, msg_id, self.vectorClock, origin}] to {peer_id}")
-        
+            time.sleep(self.delay)
+
+
+    def app_proc_send_to(self, type, peer_id, msg, msg_id, origin):        
         if(msg_id == None):
             msg_id = str(uuid.uuid4())
         else:
             if((type, msg, msg_id) in self.sent_to[peer_id]):
                 print(f"ApplicationProcess {self.id} > [{type}, {msg}, {msg_id}] already sent to {peer_id}")
                 return
-        
+
         try:
             self.vectorClock[self.id] += 1
+            print(f"ApplicationProcess {self.id} > sending [{type, peer_id, msg, msg_id, self.vectorClock, origin}] to {peer_id}")
             self.links[(str(peer_id))].send([type, msg, msg_id, self.vectorClock, self.id])
             self.messageLog.append(str([type, msg, msg_id, self.vectorClock, self.id]))
             self.sent_to[peer_id].append((type, msg, msg_id))
@@ -118,10 +139,12 @@ class ApplicationProcess:
             if(self.vectorClock[i] < vc[i]):
                 self.vectorClock[i] = vc[i]
 
-    def app_proc_broadcast(self, msg):
-        msg_id = str(uuid.uuid4())
+    def app_proc_broadcast(self, msg, id):
+        if(id == None):
+            id == str(uuid.uuid4())
+
         for elem in self.neighbors:
-            self.app_proc_send_to("SIMPLE", elem['neigh'], msg, msg_id, self.id)
+            self.app_proc_send_to("SIMPLE", elem['neigh'], msg, id, self.id)
 
     def get_port_counter(self):
         pc = self.subgraph.get_port_counter()
@@ -141,6 +164,51 @@ class ApplicationProcess:
     
     def get_vc(self):
         return self.vectorClock
+
+    def app_ask_consensus_commander(self, id, value):
+        if (id == None):
+            id = str(uuid.uuid4())
+
+        message = ("CONSENSUS, " + "COMMANDER, " + (str(value)))
+        self.app_proc_broadcast(message, id)
+        self.cons.set_value(id, value)
+
+    def app_ask_commander_lieutant(self, msg_id, commander, value):
+        if(self.cons.get_commander(msg_id) == None):
+            print(f"ApplicationProcess {self.id} : error while checking for commander for message {msg_id}")
+
+        else:
+            msg = ("CONSENSUS, " + "LIEUTANT, "  + value)
+            type = "SIMPLE"
+
+            if(msg_id == None):
+                msg_id == str(uuid.uuid4())
+
+            self.received_acks[msg_id] = []
+
+            for elem in self.corrects:
+                pass
+               
+    def app_proc_pfd_caller(self):
+        msg_id = str(uuid.uuid4())
+        self.pfd.start_pfd(self.corrects, msg_id, self.delay * (2 * self.num_apps))
+        self.app_proc_broadcast("HeartBeatRequest", msg_id)
+
+        time.sleep(self.delay * (2 * self.num_apps + 1))
+
+        if(self.pfd.get_flag()):
+            print(f"pfd.get_flag = {self.pfd.get_flag()} - corrects : {self.pfd.get_new_corrects()}")
+            tmp = self.corrects
+            self.corrects = self.pfd.get_new_corrects()
+            print(f"Node {self.id} > new corrects: {self.corrects}")
+
+            faulties = set(self.corrects)
+            temp3 = [x for x in tmp if x not in faulties]
+            print(temp3)
+            return temp3
+        
+        elif(self.pfd.get_flag() == "AUG_DELAY"):
+            self.app_proc_pfd_caller()
 
     def print_cons(self):
         # print("print_cons invoked")

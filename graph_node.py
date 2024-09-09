@@ -380,6 +380,7 @@ class Node:
                                             
                                             if(msg == "HeartBeatRequest"):      # message related to PerfectFailureDetector
                                                 msg = "HeartBeatReply"
+                                                self.send_to("ACK", peer_id, msg, [origin], message_id, self.id)
                                             else:
                                                 # print(f"Node {self.id} : no PFD message, checking for other solutions...")
 
