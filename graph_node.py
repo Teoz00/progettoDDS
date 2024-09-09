@@ -59,15 +59,17 @@ class Node:
         self.cons = Consensus(self.id, self.nodes_into_network)
         self.rsm = RSM(self.nodes_into_network)
         
+        self.delay = 0.005
+
         # if(delay == None):
         #     self.delay = 0.005
         # else:
         #     self.delay = 1.0
         
-        if(self.id == 5):
-            self.delay = 0.010
-        else:
-            self.delay = 0.005
+        # if(self.id == 5):
+        #     self.delay = 0.010
+        # else:
+        #     self.delay = 0.005
 
         for elem in neighbors:
             # print(my_addr + ":" + str(elem['port']), my_addr)
@@ -302,7 +304,7 @@ class Node:
                     self.vectorClock[self.id] += 1
                                         
                     # TODO
-                    typeOf = "receive-" + type
+                    typeOf = "recv-" + type
                     
                     # wide usage of switch-case pattern for recognise type of message listened
                     match type:
@@ -764,6 +766,19 @@ class Node:
                     # self.rsm.printEvent()
     
     ####### RSM METHODS #######
+
+    def generate_event_set(self, str):
+        # structure of each message as string: [TYPE, ID OF WHICH PROC GENERATE EVENT, MESSAGE]
+        # string of event-strings : [ev1, ev2, ..., evN] where evI = [TYPE, ID OF WHICH PROC GENERATE EVENT, MESSAGE]
+        
+        parsed_list = ast.literal_eval(str)
+
+        events_arg = []
+
+        for elem in parsed_list:
+            events_arg.append(EventP(elem[0], None, elem[1], None, elem[2]))
+
+        return events_arg
 
     def recv_input_rsm(self, event_set):
         res = self.rsm.setInput(event_set)

@@ -17,7 +17,7 @@ class RSM:
 
         self.ts = 0
         self.num_nodes = num_nodes
-        self.internal_vector_clock = []
+        self.internal_vector_clock = [0] * num_nodes
 
         #self.input  #client request
         #output something
@@ -34,10 +34,38 @@ class RSM:
         #Leader election (Macro node)
         #EXTENSION: 
 
+    def handle_event(self, event):
+        type = event.get_type()
+        id = event.get_id()
+
+        match type:
+            case "SEND":
+                self.update_vc(id)
+                self.ts += 1
+            
+            case "RECV":
+                self.update_vc(id)
+                self.ts += 1
+            
+            case 'CRASH':
+                i = 0
+                
+                while i < self.num_nodes:
+                    if(i != int(id)):
+                        self.update_vc(id)
+                        self.ts += 1 # rivedere, strano...
+                    
+                    i += 1
+
+        event.set_index(self.ts)
+        event.set_timestamp(self.internal_vector_clock)
+        event.print_event()
+
     def addEvent(self, event):
         self.ACTUAL_STATE = "BUSY"
         
         self.event.add((event, event.get_msg()))
+        # self.handle_event()
         self.correct.append(event)
         #print(self.correct)
         self.checkpoint = {event : [event.get_ts(), event.type] } #mi salvo il timestamp
@@ -49,9 +77,13 @@ class RSM:
         self.checkpoint = {event : [event.get_ts(), event.ACTUAL_STATE]}
 
     def setInput(self, event_set):
-        for elem in event_set:
-            self.addEvent(elem)
+        for event in event_set:
+            self.handle_event(event)
+            self.addEvent(event)
         
+        for elem in self.correct:
+            elem.print_event()
+
         return True
 
     def getEventCheck(self, event):
@@ -60,6 +92,8 @@ class RSM:
     def getState(self):
         return self.ACTUAL_STATE #oppure self.ACTUAL_STATE TODO
 
+    def get_vector_clock(self):
+        return self.internal_vector_clock
 
     def reconfiguration(self, checkpoint, corrects, faulties, log):
         # from Wikipedia.com :
@@ -165,7 +199,7 @@ class RSM:
         return True
 
     def update_vc(self, node):
-        self.vc[int(node)] += 1
+        self.internal_vector_clock[int(node)] = self.internal_vector_clock[int(node)] + 1
 
     def printEvent(self, type):
         # print("self.event: ", self.event)
@@ -192,6 +226,6 @@ event2 = EventP("SEND", 1, 1, [4, 3, 5], "Ciao2")
 rsm.addEvent(event1)
 rsm.addEvent(event2) 
 
-rsm.checkCorrectness()
+# rsm.checkCorrectness()
 ##################################################
 

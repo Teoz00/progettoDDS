@@ -1,4 +1,3 @@
-import ast
 
 class Consensus:
     
@@ -87,7 +86,6 @@ class Consensus:
         self.commanders[msg_id] = self.id
         self.chosen_values[msg_id] = value
             
-    
     def get_commander(self, msg_id):
         # print(f"\nNode {self.id} - Consensus_module > {msg_id} is in {self.commanders}? {msg_id in self.commanders}")
         if(msg_id in self.commanders):
