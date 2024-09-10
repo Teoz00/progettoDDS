@@ -793,7 +793,7 @@ class Node:
         self.pfd.start_pfd(self.corrects, msg_id, self.delay * (2 * self.nodes_into_network))
         self.specialBC_Node("HeartBeatRequest", msg_id)
         
-        time.sleep(self.delay * (2 * self.nodes_into_network + 1))
+        time.sleep(self.delay * (3 * self.nodes_into_network + 1))
         
         if(self.pfd.get_flag()):
             print(f"pfd.get_flag = {self.pfd.get_flag()} - corrects : {self.pfd.get_new_corrects()}")

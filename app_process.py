@@ -20,6 +20,9 @@ class ApplicationProcess:
         self.num_apps = num_apps
         self.delay = 0.005
 
+        if(self.id == 2):
+            self.delay = 0.20
+
         self.running = False
         self.listener_threads = {}
         self.links = {}
@@ -113,12 +116,12 @@ class ApplicationProcess:
                         if message_id not in self.received_acks:
                             self.received_acks.update({message_id : []})
 
-                            if (msg == "HeartBeatReply"):
-                                self.pfd.append_ack(message_id, origin)
+                        if (msg == "HeartBeatReply"):
+                            self.pfd.append_ack(message_id, origin)
         
                         if(origin not in self.received_acks[message_id]):
                             self.received_acks[message_id].append(origin)
-                            print(f"ApplicationProcess {self.id} : acks-status for {message_id} -> {self.received_acks[message_id]}")
+                            #print(f"ApplicationProcess {self.id} : acks-status for {message_id} -> {self.received_acks[message_id]}")
 
             time.sleep(self.delay)
 
@@ -204,26 +207,34 @@ class ApplicationProcess:
             # print("starting lieutant consensus")
             self.app_proc_broadcast(msg, msg_id)
                
-    def app_proc_pfd_caller(self):
+    def app_proc_pfd_caller(self, event):
+
         msg_id = str(uuid.uuid4())
-        self.pfd.start_pfd(self.corrects, msg_id, self.delay * (2 * self.num_apps))
+        self.pfd.start_pfd(self.corrects, msg_id, self.delay * (3 * self.num_apps))
         self.app_proc_broadcast("HeartBeatRequest", msg_id)
 
-        time.sleep(self.delay * (2 * self.num_apps + 1))
+        time.sleep(self.delay * (3 * self.num_apps + 1))
 
-        if(self.pfd.get_flag()):
-            print(f"pfd.get_flag = {self.pfd.get_flag()} - corrects : {self.pfd.get_new_corrects()}")
+        if(self.pfd.get_flag() == "AUG_DELAY"):
+            print("Restarting app_proc_pfd_caller...")
+            return self.app_proc_pfd_caller(event)
+        
+        elif(self.pfd.get_flag() == True):
+            # print(f"pfd.get_flag = {self.pfd.get_flag()} - corrects : {self.pfd.get_new_corrects()}")
             tmp = self.corrects
             self.corrects = self.pfd.get_new_corrects()
-            print(f"ApplicationProcess {self.id} > new corrects: {self.corrects}")
+            # print(f"ApplicationProcess {self.id} > new corrects: {self.corrects} vs old corrects : {tmp}")
+            event.set()
+            return self.corrects
 
-            faulties = set(self.corrects)
-            temp3 = [x for x in tmp if x not in faulties]
-            print(temp3)
-            return temp3
-        
-        elif(self.pfd.get_flag() == "AUG_DELAY"):
-            self.app_proc_pfd_caller()
+    def get_new_corrects(self):
+        ev = threading.Event()
+        ret = self.app_proc_pfd_caller(ev)
+
+        while(not ev.is_set()):
+            time.sleep(0.5)
+
+        return ret
 
     def print_cons(self):
         # print("print_cons invoked")

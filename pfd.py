@@ -23,11 +23,13 @@ class PerfectFailureDetector:
     
     def waiting_thread_function(self):
         time.sleep(self.delay)
+        self.flag = False
         # self.stop_event.set()
             
         temp_list = []
         
         for elem1 in self.corrects:
+            # print("PFD - received acks: ", self.received_acks)
             for elem2 in self.received_acks:
                 if(elem1 == elem2):
                     temp_list.append(elem1)
@@ -37,7 +39,7 @@ class PerfectFailureDetector:
             self.delay = 1.5 * self.delay
             return
         
-        print(f"PFD > replying nodes detected: [{temp_list}]")
+        # print(f"PFD > replying nodes detected: [{temp_list}]")
         self.corrects = temp_list
         self.flag = True
         

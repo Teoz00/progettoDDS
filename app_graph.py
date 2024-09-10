@@ -22,6 +22,7 @@ class ApplicationGraph:
         port_counter = base_port
 
         self.app_nodes = {}
+        self.corrects = self.app_graph.nodes()
         self.app_nodes_list = self.app_graph.nodes()
         self.port_map = {}
         detailed_app_nodes_list = {}
@@ -63,20 +64,21 @@ class ApplicationGraph:
 
             self.app_nodes[node] = ApplicationProcess(detailed_app_nodes_list[node]['id'], detailed_app_nodes_list[node]['ip'], detailed_app_nodes_list[node]['ports'], nodes_per_subgraph, num_apps, port_counter, self.stop_event)
             port_counter = self.app_nodes[node].get_port_counter()
-    
 
-    def check_faulties_thread_starter(self, app_id, node_id, event, list_for_corrects):
-        list_for_corrects.append([node_id, self.app_nodes[app_id].check_faulties(node_id)])
+    ######## PFD FOR RSMS #######
+
+    def check_faulty_rsms_thread_starter(self, app_id, node_id, event, list_for_corrects):
+        list_for_corrects.append([node_id, self.app_nodes[app_id].check_faulty_rsms(node_id)])
         event.set()
     
-    def check_faulties(self):
+    def check_faulty_rsms(self):
         events = []
         list_for_corrects = []
 
         for elem in self.app_nodes:
             event_for_thr = threading.Event()
             events.append(event_for_thr)
-            thr = threading.Thread(target=self.check_faulties_thread_starter, args=(elem, random.randint(0, self.app_nodes[elem].get_num_nodes()-1), event_for_thr, list_for_corrects))
+            thr = threading.Thread(target=self.check_faulty_rsms_thread_starter, args=(elem, random.randint(0, self.app_nodes[elem].get_num_nodes()-1), event_for_thr, list_for_corrects))
             thr.start()
 
         counter = 0
@@ -87,6 +89,57 @@ class ApplicationGraph:
                 if(elem.is_set()):
                     counter += 1
 
+    ################################
+
+    ######## PFD FOR APPLICATION PROCS ########
+
+    def check_faulty_procs_thread_starter(self, app_id, event, list_for_corrects):
+        list_for_corrects.append([app_id, self.app_nodes[app_id].get_new_corrects()])
+        event.set()
+    
+    def check_faulty_procs(self):
+        events = []
+        list_for_corrects = []
+
+        for elem in self.app_nodes:
+            event_for_thr = threading.Event()
+            events.append(event_for_thr)
+            thr = threading.Thread(target=self.check_faulty_procs_thread_starter, args=(elem, event_for_thr, list_for_corrects))
+            thr.start()
+
+        counter = 0
+        while(counter < len(self.app_nodes)):
+            time.sleep(0.5)
+            counter = 0
+            for elem in events:
+                if(elem.is_set()):
+                    counter += 1
+
+        voted_nodes = {}
+        for elem in self.app_nodes_list:
+            voted_nodes.update({elem : 0})
+            voted_nodes[0] += 1
+        
+        for elem in list_for_corrects:
+            # id : elem[0], its corrects: elem[1]
+            for detected in elem[1]:
+                voted_nodes[detected] += 1
+        
+        threshold = min(voted_nodes.values())
+
+        self.corrects = []
+        for elem in voted_nodes:
+            if(voted_nodes[elem] > threshold):
+                if(elem not in self.corrects):
+                    self.corrects.append(elem)
+
+        self.corrects.sort()
+        print(f"ApplicationGraph > new corrects : {self.corrects}")
+
+    ################################################
+
+    ######## CONSENSUS FOR RSMS ########
+
     def get_consensus_rsms_thread_starter(self, node_id, id, msg_id, value, event):
         self.consensus_events[msg_id].append([node_id, self.app_nodes[node_id].get_rsm_consensus(id, msg_id, value)])
         event.set()
@@ -96,7 +149,7 @@ class ApplicationGraph:
         events = []
         self.consensus_events[msg_id] = []
 
-        for elem in self.app_nodes:
+        for elem in self.corrects:
             event_for_thr = threading.Event()
             events.append(event_for_thr)
             thr = threading.Thread(target=self.get_consensus_rsms_thread_starter, args=(elem, id, msg_id, value, event_for_thr))
@@ -104,7 +157,7 @@ class ApplicationGraph:
             # self.consensus_events[msg_id].append([elem, self.app_nodes[elem].get_consensus(id, msg_id, value)])
         
         counter = 0
-        while(counter < len(self.app_nodes)):
+        while(counter < len(self.corrects)):
             # time.sleep(2.5)
             counter = 0
             for elem in events:
@@ -118,6 +171,8 @@ class ApplicationGraph:
         for elem in self.consensus_events[msg_id]:
                 print("\t", elem)
 
+    ########################################
+
     def random_app_proc_choice(self):
         tmp = []
         
@@ -125,6 +180,8 @@ class ApplicationGraph:
             tmp.append(elem)
 
         return random.choice(tmp)
+
+    ######## CONSENSUS FOR APPLICATION PROCESSES ########
 
     def ask_consensus_app_proc_thread_starter(self, node_id, msg_id, value, event):
         self.consensus_events[msg_id].append([node_id, self.app_nodes[node_id].get_app_consensus(msg_id, value)])
@@ -159,12 +216,7 @@ class ApplicationGraph:
         print(f"ApplicationGraph > consensus reached : {self.consensus_events[msg_id]}")
         return self.consensus_events[msg_id]
 
-        # event_for_thr = threading.Event()
-        # events.append(event_for_thr)
-        # thr = threading.Thread(target=self.ask_consensus_app_proc_thread_starter, args=(neo, None, value, event_for_thr))
-        # thr.start()
-        
-        # print(neo)
+    ################################################
 
     def plot_graph(self):
         pos = nx.spring_layout(self.app_graph)

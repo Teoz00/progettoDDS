@@ -35,6 +35,10 @@ g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 # g.check_faulty_rsms()
 # input("")
 
+# TEST FOR DETECTING FAULTY APP PROCESSES
+g.check_faulty_procs()
+input("")
+
 # TEST FOR DETECING FAULTY APPLICATION PROCESSES
 # g.app_nodes[0].app_proc_pfd_caller()
 # input("")
