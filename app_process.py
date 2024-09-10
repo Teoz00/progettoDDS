@@ -16,6 +16,7 @@ class ApplicationProcess:
         self.my_addr = my_addr
         self.neighbors = neighbors
         self.corrects = []
+        self.correct_rsms = []
         self.num_nodes = number_node
         self.num_apps = num_apps
         self.delay = 0.005
@@ -64,6 +65,9 @@ class ApplicationProcess:
             if(i != self.id):
                 self.corrects.append(i)
 
+        for i in range(0, self.num_nodes):
+            self.correct_rsms.append(i)
+
         # self.subgraph.set_same_input_rsm(None)
 
         # my_id, my_addr, neighbors to be used for communication between ApplicacionProcesses
@@ -104,7 +108,7 @@ class ApplicationProcess:
                                         self.app_ask_consensus_lieutant(message_id, origin, msg[2])
                                     else:
                                         if(self.cons.am_I_a_commander(message_id)):
-                                            print(f"\ApplicationProcess {self.id} - Commander : recieved {msg[2]} from {origin}")
+                                            print(f"ApplicationProcess {self.id} - Commander : recieved {msg[2]} from {origin}")
                                         
                                         # print(f"ApplicationProcess {self.id} > checking values on {message_id} : {self.cons.check_values(message_id)} - {(self.cons.already_chosen(message_id))} ")
                                         
@@ -170,11 +174,14 @@ class ApplicationProcess:
     
     def get_rsm_consensus(self, id, msg_id, msg):
         cons = []
-        if(id in self.subgraph.nodes):
+        print("AppProc ", self.id, " > self.correct_rsns : ", self.correct_rsms)
+        print({str(id) in self.correct_rsms})
+        if(id in self.correct_rsms):
             cons.append(self.subgraph.ask_consensus(id, msg_id, msg))
             # self.subgraph.nodes[id].asking_for_consensus_commander(msg)
         
         print(f"ApplicationProcess {self.id} > consensus list {cons}")
+
         return cons
 
     def is_chosen(self, msg_id):
@@ -245,9 +252,38 @@ class ApplicationProcess:
         # print("print_cons invoked")
         self.subgraph.print_agreed_values()
 
-    def check_faulty_rsms(self,node_id):
-        return self.subgraph.pfd_single_result(node_id)
+    def check_faulty_rsms(self):
+        res = self.subgraph.check_faulty_rsms()
+        print(f"\nApplicationProcess {self.id} > res : {res}\n")
 
+        voted_nodes = {}
+        for elem in self.subgraph.nodes_list:
+            voted_nodes.update({elem : 0})
+            voted_nodes[0] += 1
+        
+        for elem in res:
+            # id : elem[0], its corrects: elem[1]
+            voted_nodes[elem] += 1
+        
+        threshold = min(voted_nodes.values())
+
+        self.correct_rsms = []
+        for elem in voted_nodes:
+            if(voted_nodes[elem] > threshold):
+                if(elem not in self.correct_rsms):
+                    self.correct_rsms.append(elem)
+
+        self.correct_rsms.sort()
+        n = len(self.correct_rsms)
+        
+        for elem in self.correct_rsms:
+            self.subgraph.nodes[elem].cons.set_num_nodes(n)
+            self.subgraph.nodes[elem].set_new_corrects(self.correct_rsms)
+
+        print(f"ApplicationProcess {self.id} > new corrects : {self.correct_rsms}")
+
+        return self.correct_rsms
+    
     def plot_graph(self):
         self.subgraph.plot_graph()
 

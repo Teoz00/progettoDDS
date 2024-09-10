@@ -68,7 +68,7 @@ class ApplicationGraph:
     ######## PFD FOR RSMS #######
 
     def check_faulty_rsms_thread_starter(self, app_id, node_id, event, list_for_corrects):
-        list_for_corrects.append([node_id, self.app_nodes[app_id].check_faulty_rsms(node_id)])
+        list_for_corrects.append([node_id, self.app_nodes[app_id].check_faulty_rsms()])
         event.set()
     
     def check_faulty_rsms(self):
@@ -83,11 +83,15 @@ class ApplicationGraph:
 
         counter = 0
         while(counter < len(self.app_nodes)):
+            # print(events)
             # time.sleep(2.5)
             counter = 0
             for elem in events:
                 if(elem.is_set()):
                     counter += 1
+
+
+        print("AppGraph > list of correct rsms for each node : ", list_for_corrects)
 
     ################################
 
@@ -138,7 +142,8 @@ class ApplicationGraph:
         
         for elem in self.corrects:
             self.app_nodes[elem].cons.set_num_nodes(n)
-
+        
+        # print("voted_nodes: ", voted_nodes)
         print(f"ApplicationGraph > new corrects : {self.corrects}")
 
     ################################################
@@ -154,6 +159,7 @@ class ApplicationGraph:
         events = []
         self.consensus_events[msg_id] = []
 
+        print(self.corrects)
         for elem in self.corrects:
             event_for_thr = threading.Event()
             events.append(event_for_thr)
@@ -162,11 +168,14 @@ class ApplicationGraph:
             # self.consensus_events[msg_id].append([elem, self.app_nodes[elem].get_consensus(id, msg_id, value)])
         
         counter = 0
+        # time.sleep(0.5)
+        print(self.corrects, len(self.corrects)) ### !
         while(counter < len(self.corrects)):
             counter = 0
             for elem in events:
                 if(elem.is_set()):
                     counter += 1
+        
             time.sleep(0.2)
 
         self.consensus_events[msg_id].sort()
@@ -201,7 +210,9 @@ class ApplicationGraph:
         neo = self.random_app_proc_choice()
         self.app_nodes[neo].app_ask_consensus_commander(msg_id, value)
         
-        tmp = self.corrects.copy()
+        tmp = []
+        for elem in self.corrects:
+            tmp.append(elem)
 
         while(len(tmp) > 0):
             for elem in tmp:

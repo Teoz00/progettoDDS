@@ -2,9 +2,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 import time
-import os
 import uuid
-from threading import Event
+from threading import Event, Thread
 
 # from dijkstra import Dijkstra
 from graph_node import Node
@@ -49,6 +48,8 @@ class Graph:
         self.stop_event = event
         self.cons_events = {}
         self.consensus_events = {}
+
+        self.corrects = self.G.nodes()
         
         # detailed_node_list -> dictionary with, for each node of the graph, the following info:
         #   <id, ip, ports: {port to neighbor, neigbor id, neighbor ip, port that neighbor uses to connect with that node}>
@@ -163,8 +164,76 @@ class Graph:
     def pfd_test(self, origin):
         self.nodes[origin].pfd_caller()
 
+    ##################################################
+
+    def check_faulty_rsms_thread_starter(self, node_id, event, list_for_corrects):
+        list_for_corrects.append([node_id, self.nodes[node_id].pfd_caller(event)])
+        event.set()
+    
+    def check_faulty_rsms(self):
+        # for elem in self.corrects:
+        #     tmp = self.nodes[elem].pfd_caller()
+        #     tmp.append(elem)
+        #     list_to_ret.append(tmp)
+
+        # print(f"Node {self.id} > list_to_ret : {list_to_ret}")
+        # list_to_ret.sort()
+        # # self.corrects = list_to_ret
+
+        # return list_to_ret
+
+        events = []
+        list_for_corrects = []
+
+        for elem in self.corrects:
+            event_for_thr = Event()
+            events.append(event_for_thr)
+            thr = Thread(target=self.check_faulty_rsms_thread_starter, args=(elem, event_for_thr, list_for_corrects))
+            thr.start()
+
+        counter = 0
+        while(counter < len(self.nodes)):
+            time.sleep(0.5)
+            counter = 0
+            for elem in events:
+                if(elem.is_set()):
+                    counter += 1
+
+        voted_nodes = {}
+        for elem in self.nodes_list:
+            voted_nodes.update({elem : 0})
+            voted_nodes[0] += 1
+
+        print(f"Node {self.id} > voted_nodes : {voted_nodes}")
+
+        for elem in list_for_corrects:
+            # id : elem[0], its corrects: elem[1]
+            for detected in elem[1]:
+                voted_nodes[detected] += 1
+        
+        threshold = min(voted_nodes.values())
+
+        print("LIST FOR CORRECTS: ", list_for_corrects)
+
+        self.corrects = []
+        for elem in voted_nodes:
+            if(voted_nodes[elem] > threshold):
+                if(elem not in self.corrects):
+                    self.corrects.append(elem)
+
+        self.corrects.sort()
+        n = len(self.corrects)
+        
+        for elem in self.corrects:
+            self.nodes[elem].cons.set_num_nodes(n)
+
+        print(f"Graph > new corrects : {self.corrects}")
+        return self.corrects
+
+    ##################################################
+
     def pfd_single_result(self, node_id):
-        if(node_id in self.nodes):
+        if(node_id in self.corrects):
             return self.nodes[node_id].pfd_caller()
         
     def set_same_input_rsm(self, event_set):
@@ -176,11 +245,14 @@ class Graph:
 
     def ask_consensus(self, id, msg_id, msg):
         self.consensus_events[msg_id] = []
+        print("helo")
 
-        if(id in self.nodes):
+        print(f"{id} in {self.corrects} : {id in self.corrects}")
+
+        if(id in self.corrects):
             self.nodes[id].asking_for_consensus_commander(msg_id, msg)
         
-        while(len(self.consensus_events[msg_id]) < len(self.nodes)):
+        while(len(self.consensus_events[msg_id]) < len(self.corrects)):
             # self.print_agreed_values()
             for elem in self.nodes:
                 FOUND = False

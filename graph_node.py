@@ -20,9 +20,13 @@ class Node:
         self.links = {}
         self.address = my_addr
         self.nodes_into_network = int(all)
-        
+
         self.corrects = []
-        
+
+        for i in range(0, all):
+            if(i != self.id):
+                self.corrects.append(i)
+
         # list of events happened during the execution
         self.event_set = []
         
@@ -66,10 +70,10 @@ class Node:
         # else:
         #     self.delay = 1.0
         
-        # if(self.id == 5):
-        #     self.delay = 0.010
-        # else:
-        #     self.delay = 0.005
+        if(self.id == 2):
+            self.delay = 0.1
+        else:
+            self.delay = 0.005
 
         for elem in neighbors:
             # print(my_addr + ":" + str(elem['port']), my_addr)
@@ -93,7 +97,6 @@ class Node:
         for i in range(0, self.nodes_into_network):
             if(i != self.id):
                 self.corrects.append(i)
-
                  
     def manage_vector_clock(self, vc):
         if(not(isinstance(vc, list))):
@@ -264,14 +267,6 @@ class Node:
         #     print(f"\tRaised: {e}")
             # print(f"Stacktrace::: {traceback.print_exc()}")
             # print(f"Impossible to send a message to specified peer - {e}")
-    
-    def spawn_terminal(self):
-        self.running = True
-        self.listener_thread = threading.Thread(target=self.listen_msg)
-        self.listener_thread.start()
-        
-        self.input_thread = threading.Thread(target=self.handle_input)
-        self.input_thread.start()
 
     # for each of the link, it listens for possible incoming messages
     def listen_msg(self, link):
@@ -581,11 +576,11 @@ class Node:
                                             self.acks_received[message_id].append(origin)
                                             
                                         self.acks_received[message_id].sort()
-                                        print(f"\nNode {self.id} : self.acks_received[{message_id}]: {self.acks_received}\n")
+                                        # print(f"Node {self.id} : self.acks_received[{message_id}]: {self.acks_received}")
                                         
                                         if(len(self.acks_received[message_id]) == (self.nodes_into_network - 1)):
                                             # print(self.acks_received[message_id])
-                                            print(f"\nNode {self.id} : self.acks_received[{message_id}]: {self.acks_received}\n")
+                                            print(f"Node {self.id} : self.acks_received[{message_id}]: {self.acks_received} -> END")
                                             # print(f"Node {self.id} > STOP")
                                             # self.termination_print()
                                             # self.stop_event.set()
@@ -740,6 +735,7 @@ class Node:
     
     def specialBC_Node(self, msg, msg_id):
         print(f"Node {self.id} : corrects {self.corrects} - neighbors: [", end = "")
+        print(self.neighbors)
         for e in self.neighbors:
             print(e['neigh'], end = " ")
         print("]")
@@ -788,26 +784,38 @@ class Node:
     ###########################
 
     # perfect failure detector
-    def pfd_caller(self):
+    def pfd_caller(self, event):
         msg_id = str(uuid.uuid4())
         self.pfd.start_pfd(self.corrects, msg_id, self.delay * (2 * self.nodes_into_network))
         self.specialBC_Node("HeartBeatRequest", msg_id)
         
         time.sleep(self.delay * (3 * self.nodes_into_network + 1))
         
-        if(self.pfd.get_flag()):
+        if(self.pfd.get_flag() == "AUG_DELAY"):
+            print("Restarting app_proc_pfd_caller...")
+            return self.pfd_caller(event)
+        
+        elif(self.pfd.get_flag() == True):
             print(f"pfd.get_flag = {self.pfd.get_flag()} - corrects : {self.pfd.get_new_corrects()}")
             tmp = self.corrects
             self.corrects = self.pfd.get_new_corrects()
-            print(f"Node {self.id} > new corrects: {self.corrects}")
+            print(f"ApplicationProcess {self.id} > new corrects: {self.corrects} vs old corrects : {tmp}")
+            event.set()
+            return self.corrects
 
-            faulties = set(self.corrects)
-            temp3 = [x for x in tmp if x not in faulties]
-            print(temp3)
-            return temp3
-        
-        elif(self.pfd.get_flag() == "AUG_DELAY"):
-            self.pfd_caller()
+    def set_new_corrects(self, new_corrects):
+        self.corrects = new_corrects
+
+        filtered_neighbors = []
+        for neighbor in self.neighbors:
+            # Se 'neigh' è presente nella lista valid_neighs, lo aggiungiamo alla lista temporanea
+            if neighbor['neigh'] in self.corrects:
+                filtered_neighbors.append(neighbor)
+                # print(filtered_neighbors)
+
+        # Sostituiamo la lista originale con quella filtrata
+        self.neighbors = filtered_neighbors
+        # print(self.neighbors)
 
     def am_I_correct(self):
         # if(not(self.rsm.checkCorrectness(...)):
@@ -819,10 +827,10 @@ class Node:
             id = message_id = str(uuid.uuid4())
     
         message = ("CONSENSUS, " + "COMMANDER, " + (str(value)))
+        print(message)
         self.specialBC_Node(message, id)
         self.cons.set_value(id, value)
 
-        
     def asking_for_consensus_lieutant(self, msg_id, commander, value):
         if(self.cons.get_commander(msg_id) == None):
             # this is a very bad situation, let's hope this never happen...
