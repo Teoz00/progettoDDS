@@ -134,6 +134,11 @@ class ApplicationGraph:
                     self.corrects.append(elem)
 
         self.corrects.sort()
+        n = len(self.corrects)
+        
+        for elem in self.corrects:
+            self.app_nodes[elem].cons.set_num_nodes(n)
+
         print(f"ApplicationGraph > new corrects : {self.corrects}")
 
     ################################################
@@ -158,11 +163,11 @@ class ApplicationGraph:
         
         counter = 0
         while(counter < len(self.corrects)):
-            # time.sleep(2.5)
             counter = 0
             for elem in events:
                 if(elem.is_set()):
                     counter += 1
+            time.sleep(0.2)
 
         self.consensus_events[msg_id].sort()
         
@@ -176,7 +181,7 @@ class ApplicationGraph:
     def random_app_proc_choice(self):
         tmp = []
         
-        for elem in self.app_nodes_list:
+        for elem in self.corrects:
             tmp.append(elem)
 
         return random.choice(tmp)
@@ -196,22 +201,16 @@ class ApplicationGraph:
         neo = self.random_app_proc_choice()
         self.app_nodes[neo].app_ask_consensus_commander(msg_id, value)
         
-        while(len(self.consensus_events[msg_id]) < len(self.app_nodes)):
-            for elem in self.app_nodes:
-                FOUND = False
+        tmp = self.corrects.copy()
 
-                for e in self.consensus_events[msg_id]:
-                    if(elem in e):
-                        FOUND = True
-                        break
-                    
-                if(not FOUND):
-                    v = self.app_nodes[elem].is_chosen(msg_id) 
+        while(len(tmp) > 0):
+            for elem in tmp:
+                val = self.app_nodes[elem].cons.get_val(msg_id)
+                if(val != False):
+                    self.consensus_events[msg_id].append(val)
+                    tmp.remove(elem)
 
-                    if(v != False):
-                        self.consensus_events[msg_id].append({elem : v})
-                
-                time.sleep(0.1)
+            time.sleep(0.2)
 
         print(f"ApplicationGraph > consensus reached : {self.consensus_events[msg_id]}")
         return self.consensus_events[msg_id]

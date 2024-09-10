@@ -48,8 +48,8 @@ input("")
 # input("")
 
 # TEST FOR ACHIEVING CONSENSUS FROM A *SPECIFIC* APPLICATION PROCESS
-g.ask_consensus_app_procs("helo")
-input("")
+# g.ask_consensus_app_procs("helo")
+# input("")
 
 # TEST FOR ACHIEVING CONSENSUS FOR *ALL* APPLICATION PROCESSES
 # g.app_nodes[0].app_ask_consensus_commander(None, "v4lu3")

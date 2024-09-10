@@ -100,14 +100,18 @@ class ApplicationProcess:
                             else:
                                 msg = msg.split(", ")
                                 if(msg[0] == "CONSENSUS"):
-                                    if(self.cons.handle_msg(msg, message_id, origin)):
+                                    if(self.cons.handle_msg(msg, message_id, origin) == True):
                                         self.app_ask_consensus_lieutant(message_id, origin, msg[2])
-                                elif(self.cons.am_I_a_commander(message_id)):
-                                    print(f"\n ApplicationProcess {self.id} - Commander : recieved {msg[2]} from {origin}\n")
-                                    if(self.cons.check_values(message_id)) and not(self.cons.already_chosen(message_id)):
-                                        val = self.cons.choose_value(message_id)
-                                        if(not(self.cons.am_I_a_commander(message_id))):
-                                            self.send_to(type, self.cons.get_commander(message_id), str('["CONSENSUS", "LIEUTANT", ' + str(val) + ', ]'), [origin], message_id, self.id)
+                                    else:
+                                        if(self.cons.am_I_a_commander(message_id)):
+                                            print(f"\ApplicationProcess {self.id} - Commander : recieved {msg[2]} from {origin}")
+                                        
+                                        # print(f"ApplicationProcess {self.id} > checking values on {message_id} : {self.cons.check_values(message_id)} - {(self.cons.already_chosen(message_id))} ")
+                                        
+                                        if(self.cons.check_values(message_id)) and not(self.cons.already_chosen(message_id)):
+                                            val = self.cons.choose_value(message_id)
+                                            if(not(self.cons.am_I_a_commander(message_id))):
+                                                self.app_proc_send_to(type, self.cons.get_commander(message_id), str('["CONSENSUS", "LIEUTANT", ' + str(val) + ', ]'), message_id, self.id)
 
 
                                 # self.app_proc_send_to("ACK", origin, msg, message_id, self.id)
@@ -153,11 +157,12 @@ class ApplicationProcess:
                 self.vectorClock[i] = vc[i]
 
     def app_proc_broadcast(self, msg, id):
+        print(f"Node {self.id} - corrects : {self.corrects}")
         if(id == None):
             id == str(uuid.uuid4())
 
-        for elem in self.neighbors:
-            self.app_proc_send_to("SIMPLE", elem['neigh'], msg, id, self.id)
+        for elem in self.corrects:
+            self.app_proc_send_to("SIMPLE", elem, msg, id, self.id)
 
     def get_port_counter(self):
         pc = self.subgraph.get_port_counter()
@@ -204,7 +209,7 @@ class ApplicationProcess:
             if(msg_id not in self.received_acks):
                 self.received_acks[msg_id] = []
 
-            # print("starting lieutant consensus")
+            print("starting lieutant consensus")
             self.app_proc_broadcast(msg, msg_id)
                
     def app_proc_pfd_caller(self, event):
