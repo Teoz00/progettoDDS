@@ -24,7 +24,7 @@ class Consensus:
         # print(f"\nNode {self.id} - Consensus_module: {message} received")
         role = message[1]
         value = message[2]
-        print(f"Node {self.id} - Consensus_module: role {role}, value {value}")
+        # print(f"Node {self.id} - Consensus_module: {peer_id} has role {role} and sent value {value}")
         
         if(msg_id not in self.values):
             self.values[msg_id] = {}

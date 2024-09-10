@@ -86,11 +86,11 @@ class ApplicationGraph:
                 if(elem.is_set()):
                     counter += 1
 
-    def get_consensus_thread_starter(self, node_id, id, msg_id, value, event):
+    def get_consensus_rsms_thread_starter(self, node_id, id, msg_id, value, event):
         self.consensus_events[msg_id].append([node_id, self.app_nodes[node_id].get_consensus(id, msg_id, value)])
         event.set()
 
-    def get_consensus_processes(self, id, value):
+    def get_consensus_rsms_processes(self, id, value):
         msg_id = str(uuid.uuid4())
         events = []
         self.consensus_events[msg_id] = []
@@ -98,7 +98,7 @@ class ApplicationGraph:
         for elem in self.app_nodes:
             event_for_thr = threading.Event()
             events.append(event_for_thr)
-            thr = threading.Thread(target=self.get_consensus_thread_starter, args=(elem, id, msg_id, value, event_for_thr))
+            thr = threading.Thread(target=self.get_consensus_rsms_thread_starter, args=(elem, id, msg_id, value, event_for_thr))
             thr.start()
             # self.consensus_events[msg_id].append([elem, self.app_nodes[elem].get_consensus(id, msg_id, value)])
         

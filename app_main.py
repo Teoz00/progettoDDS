@@ -27,14 +27,26 @@ sys.setrecursionlimit(2147483647) # max int C as parameter
 g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 
 # g.plot_graph()
+
+# TEST FOR GIVING INPUT TO RSM
 # g.app_nodes[0].subgraph.nodes[0].recv_input_rsm(g.app_nodes[0].subgraph.nodes[0].generate_event_set("[['SEND', '0', 'msg1'], ['RECV', '2', 'msg1']]"))
 
-# g.check_faulties()
+# TEST FOR CHECKING PFD AMONG RSMS
+# g.check_faulty_rsms()
 # input("")
-g.app_nodes[0].app_proc_pfd_caller()
-# g.get_consensus_processes(0, 'test4consensus')
-input("")
-# g.app_nodes[0].app_proc_broadcast("First broacast!")
+
+# TEST FOR DETECING FAULTY APPLICATION PROCESSES
+# g.app_nodes[0].app_proc_pfd_caller()
+# input("")
+
+# TEST FOR ACHIEVING CONSENSUS FOR RSMS
+# g.get_consensus_rsms_processes(0, 'test4consensus')
+# input("")
+
+# TEST FOR ACHIEVING CONSENSUS FROM A *SPECIFIC* APPLICATION PROCESS
+
+# TEST FOR ACHIEVING CONSENSUS FOR *ALL* APPLICATION PROCESSES
+# g.app_nodes[0].app_ask_consensus_commander(None, "v4lu3")
 # input("")
 
 # for elem in g.app_nodes:

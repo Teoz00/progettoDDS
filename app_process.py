@@ -95,12 +95,22 @@ class ApplicationProcess:
                             if(msg == "HeartBeatRequest"):
                                 self.app_proc_send_to("ACK", origin, "HeartBeatReply", message_id, self.id)
                             else:
-                                m = ast.literal_eval(msg)
-                                self.app_proc_send_to("ACK", origin, msg, message_id, self.id)
+                                msg = msg.split(", ")
+                                if(msg[0] == "CONSENSUS"):
+                                    if(self.cons.handle_msg(msg, message_id, origin)):
+                                        self.app_ask_consensus_lieutant(message_id, origin, msg[2])
+                                elif(self.cons.am_I_a_commander(message_id)):
+                                    print(f"\n ApplicationProcess {self.id} - Commander : recieved {msg[2]} from {origin}\n")
+                                    if(self.cons.check_values(message_id)) and not(self.cons.already_chosen(message_id)):
+                                        val = self.cons.choose_value(message_id)
+                                        if(not(self.cons.am_I_a_commander(message_id))):
+                                            self.send_to(type, self.cons.get_commander(message_id), str('["CONSENSUS", "LIEUTANT", ' + str(val) + ', ]'), [origin], message_id, self.id)
+
+
+                                # self.app_proc_send_to("ACK", origin, msg, message_id, self.id)
                     
                     case "ACK":
                         if message_id not in self.received_acks:
-                            print("ACK -> ", msg)
                             self.received_acks.update({message_id : []})
 
                             if (msg == "HeartBeatReply"):
@@ -173,21 +183,20 @@ class ApplicationProcess:
         self.app_proc_broadcast(message, id)
         self.cons.set_value(id, value)
 
-    def app_ask_commander_lieutant(self, msg_id, commander, value):
+    def app_ask_consensus_lieutant(self, msg_id, commander, value):
         if(self.cons.get_commander(msg_id) == None):
             print(f"ApplicationProcess {self.id} : error while checking for commander for message {msg_id}")
 
         else:
             msg = ("CONSENSUS, " + "LIEUTANT, "  + value)
-            type = "SIMPLE"
-
             if(msg_id == None):
                 msg_id == str(uuid.uuid4())
 
-            self.received_acks[msg_id] = []
+            if(msg_id not in self.received_acks):
+                self.received_acks[msg_id] = []
 
-            for elem in self.corrects:
-                pass
+            print("starting lieutant consensus")
+            self.app_proc_broadcast(msg, msg_id)
                
     def app_proc_pfd_caller(self):
         msg_id = str(uuid.uuid4())
@@ -200,7 +209,7 @@ class ApplicationProcess:
             print(f"pfd.get_flag = {self.pfd.get_flag()} - corrects : {self.pfd.get_new_corrects()}")
             tmp = self.corrects
             self.corrects = self.pfd.get_new_corrects()
-            print(f"Node {self.id} > new corrects: {self.corrects}")
+            print(f"ApplicationProcess {self.id} > new corrects: {self.corrects}")
 
             faulties = set(self.corrects)
             temp3 = [x for x in tmp if x not in faulties]
@@ -214,7 +223,7 @@ class ApplicationProcess:
         # print("print_cons invoked")
         self.subgraph.print_agreed_values()
 
-    def check_faulties(self,node_id):
+    def check_faulty_rsms(self,node_id):
         return self.subgraph.pfd_single_result(node_id)
 
     def plot_graph(self):
