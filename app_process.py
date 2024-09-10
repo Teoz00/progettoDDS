@@ -160,7 +160,7 @@ class ApplicationProcess:
         pc = self.subgraph.get_port_counter()
         return pc
     
-    def get_consensus(self, id, msg_id, msg):
+    def get_rsm_consensus(self, id, msg_id, msg):
         cons = []
         if(id in self.subgraph.nodes):
             cons.append(self.subgraph.ask_consensus(id, msg_id, msg))
@@ -169,11 +169,17 @@ class ApplicationProcess:
         print(f"ApplicationProcess {self.id} > consensus list {cons}")
         return cons
 
+    def is_chosen(self, msg_id):
+        return self.cons.get_val(msg_id)
+
     def get_num_nodes(self):
         return self.subgraph.get_size()
     
     def get_vc(self):
         return self.vectorClock
+
+    def get_app_consensus(self, msg_id):
+        pass
 
     def app_ask_consensus_commander(self, id, value):
         if (id == None):
@@ -195,7 +201,7 @@ class ApplicationProcess:
             if(msg_id not in self.received_acks):
                 self.received_acks[msg_id] = []
 
-            print("starting lieutant consensus")
+            # print("starting lieutant consensus")
             self.app_proc_broadcast(msg, msg_id)
                
     def app_proc_pfd_caller(self):

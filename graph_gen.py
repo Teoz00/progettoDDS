@@ -189,7 +189,7 @@ class Graph:
                     if(elem in e):
                         FOUND = True
                         break
-                     
+                    
                 if(not FOUND):
                     v = self.nodes[elem].is_chosen(msg_id) 
 

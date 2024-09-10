@@ -26,6 +26,7 @@ class ApplicationGraph:
         self.port_map = {}
         detailed_app_nodes_list = {}
 
+        self.consensus_events = {}
         self.stop_event = threading.Event()
 
         # consensus for each message has an entry into a dedicated structure
@@ -87,7 +88,7 @@ class ApplicationGraph:
                     counter += 1
 
     def get_consensus_rsms_thread_starter(self, node_id, id, msg_id, value, event):
-        self.consensus_events[msg_id].append([node_id, self.app_nodes[node_id].get_consensus(id, msg_id, value)])
+        self.consensus_events[msg_id].append([node_id, self.app_nodes[node_id].get_rsm_consensus(id, msg_id, value)])
         event.set()
 
     def get_consensus_rsms_processes(self, id, value):
@@ -116,6 +117,54 @@ class ApplicationGraph:
         print(f"AppGraph - consensus :\n", end = "")
         for elem in self.consensus_events[msg_id]:
                 print("\t", elem)
+
+    def random_app_proc_choice(self):
+        tmp = []
+        
+        for elem in self.app_nodes_list:
+            tmp.append(elem)
+
+        return random.choice(tmp)
+
+    def ask_consensus_app_proc_thread_starter(self, node_id, msg_id, value, event):
+        self.consensus_events[msg_id].append([node_id, self.app_nodes[node_id].get_app_consensus(msg_id, value)])
+        event.set()
+
+    # asking consensus among application processes
+    def ask_consensus_app_procs(self, value):
+        msg_id = str(uuid.uuid4())
+        self.consensus_events[msg_id] = []
+
+        # for testing, commander is randomly chosen from corrects
+        neo = self.random_app_proc_choice()
+        self.app_nodes[neo].app_ask_consensus_commander(msg_id, value)
+        
+        while(len(self.consensus_events[msg_id]) < len(self.app_nodes)):
+            for elem in self.app_nodes:
+                FOUND = False
+
+                for e in self.consensus_events[msg_id]:
+                    if(elem in e):
+                        FOUND = True
+                        break
+                    
+                if(not FOUND):
+                    v = self.app_nodes[elem].is_chosen(msg_id) 
+
+                    if(v != False):
+                        self.consensus_events[msg_id].append({elem : v})
+                
+                time.sleep(0.1)
+
+        print(f"ApplicationGraph > consensus reached : {self.consensus_events[msg_id]}")
+        return self.consensus_events[msg_id]
+
+        # event_for_thr = threading.Event()
+        # events.append(event_for_thr)
+        # thr = threading.Thread(target=self.ask_consensus_app_proc_thread_starter, args=(neo, None, value, event_for_thr))
+        # thr.start()
+        
+        # print(neo)
 
     def plot_graph(self):
         pos = nx.spring_layout(self.app_graph)

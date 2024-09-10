@@ -15,7 +15,7 @@ class Consensus:
     
     def print_status(self, msg_id):
         if(msg_id in self.commanders):
-            print(f"Node {self.id} - Consensus_module : status for {msg_id} [{self.commanders[msg_id]}") # - values: {self.values[msg_id]}] - chosen: {self.check_values(msg_id)}, {self.already_chosen(msg_id)}")
+            print(f"Node {self.id} - Consensus_module : status for {msg_id} = [{self.commanders[msg_id]} - values: {self.values[msg_id]}] - check_values: {self.check_values(msg_id)}, already_chosen: {self.already_chosen(msg_id)}")
             if(self.check_values(msg_id) and not self.already_chosen(msg_id)):
                 self.choose_value(msg_id)
     
@@ -42,7 +42,7 @@ class Consensus:
             return True
                 
         elif(role == 'LIEUTANT'):
-            self.print_status(msg_id)
+            # self.print_status(msg_id)
             return False
 
     def choose_value(self, msg_id):
@@ -72,7 +72,7 @@ class Consensus:
             
         self.chosen_values[msg_id] = elected_value
             
-        print(f"Node {self.id} - Consensus_module : from {self.values[msg_id]} has been chosen {elected_value}")
+        # print(f"Node {self.id} - Consensus_module : from {self.values[msg_id]} has been chosen {elected_value}")
         return elected_value
 
     def agreed_value(self, msg_id):
