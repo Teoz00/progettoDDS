@@ -277,7 +277,7 @@ class ApplicationGraph:
         for elem in self.corrects:
             self.app_nodes[elem].app_proc_rsm_input(list_of_events)
 
-    # TODO: fare segno croce con mano sinistra
+    # TODO: may need to be implemented
 
     def plot_graph(self):
         pos = nx.spring_layout(self.app_graph)
