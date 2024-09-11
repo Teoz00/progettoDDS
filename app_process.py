@@ -21,8 +21,8 @@ class ApplicationProcess:
         self.num_apps = num_apps
         self.delay = 0.005
 
-        if(self.id == 2):
-            self.delay = 0.20
+        # if(self.id == 2):
+        #     self.delay = 0.20
 
         self.running = False
         self.listener_threads = {}
@@ -228,7 +228,7 @@ class ApplicationProcess:
         time.sleep(self.delay * (3 * self.num_apps + 1))
 
         if(self.pfd.get_flag() == "AUG_DELAY"):
-            print("Restarting app_proc_pfd_caller...")
+            print(f"ApplicationProcess {self.id } - Restarting app_proc_pfd_caller...")
             return self.app_proc_pfd_caller(event)
         
         elif(self.pfd.get_flag() == True):
@@ -252,20 +252,23 @@ class ApplicationProcess:
         # print("print_cons invoked")
         self.subgraph.print_agreed_values()
 
-    def check_faulty_rsms(self):
+    def check_faulty_rsms(self, event):
         res = self.subgraph.check_faulty_rsms()
-        print(f"\nApplicationProcess {self.id} > res : {res}\n")
+        print(f"\nApplicationProcess {self.id} > res : {res}")
 
         voted_nodes = {}
         for elem in self.subgraph.nodes_list:
             voted_nodes.update({elem : 0})
-            voted_nodes[0] += 1
+            voted_nodes[elem] += 1
         
         for elem in res:
             # id : elem[0], its corrects: elem[1]
             voted_nodes[elem] += 1
         
+        print(f"ApplicationProcess {self.id} > voted_nodes : {voted_nodes}\n")
         threshold = min(voted_nodes.values())
+
+        n = len(self.correct_rsms)
 
         self.correct_rsms = []
         for elem in voted_nodes:
@@ -282,6 +285,7 @@ class ApplicationProcess:
 
         print(f"ApplicationProcess {self.id} > new corrects : {self.correct_rsms}")
 
+        event.set()
         return self.correct_rsms
     
     def plot_graph(self):

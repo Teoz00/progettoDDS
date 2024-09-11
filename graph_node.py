@@ -13,7 +13,7 @@ from RSM import RSM
 
 class Node:
     def __init__(self, my_id, my_addr, neighbors, all, delay, event):
-        threading.stack_size(10**7)
+        threading.stack_size(2147483647)
         self.id = my_id
         
         # it contains all pp2p links needed for communicating with neighbors, dictionary
@@ -23,9 +23,9 @@ class Node:
 
         self.corrects = []
 
-        for i in range(0, all):
-            if(i != self.id):
-                self.corrects.append(i)
+        # for i in range(0, all):
+        #     if(i != self.id):
+        #         self.corrects.append(i)
 
         # list of events happened during the execution
         self.event_set = []
@@ -71,7 +71,7 @@ class Node:
         #     self.delay = 1.0
         
         if(self.id == 2):
-            self.delay = 0.1
+            self.delay = 2.15
         else:
             self.delay = 0.005
 
@@ -786,20 +786,23 @@ class Node:
     # perfect failure detector
     def pfd_caller(self, event):
         msg_id = str(uuid.uuid4())
-        self.pfd.start_pfd(self.corrects, msg_id, self.delay * (2 * self.nodes_into_network))
+        self.pfd.start_pfd(self.corrects, msg_id, self.delay * (3 * self.nodes_into_network))
         self.specialBC_Node("HeartBeatRequest", msg_id)
         
         time.sleep(self.delay * (3 * self.nodes_into_network + 1))
         
+        while(self.pfd.get_flag() == False):
+            time.sleep(0.5)
+
         if(self.pfd.get_flag() == "AUG_DELAY"):
-            print("Restarting app_proc_pfd_caller...")
+            print(f"Node {self.id} - Restarting pfd_caller...")
             return self.pfd_caller(event)
         
         elif(self.pfd.get_flag() == True):
             print(f"pfd.get_flag = {self.pfd.get_flag()} - corrects : {self.pfd.get_new_corrects()}")
             tmp = self.corrects
             self.corrects = self.pfd.get_new_corrects()
-            print(f"ApplicationProcess {self.id} > new corrects: {self.corrects} vs old corrects : {tmp}")
+            print(f"Node {self.id} > new corrects: {self.corrects} vs old corrects : {tmp}")
             event.set()
             return self.corrects
 

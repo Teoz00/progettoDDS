@@ -32,8 +32,8 @@ g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 # g.app_nodes[0].subgraph.nodes[0].recv_input_rsm(g.app_nodes[0].subgraph.nodes[0].generate_event_set("[['SEND', '0', 'msg1'], ['RECV', '2', 'msg1']]"))
 
 # TEST FOR DETECTING FAULTY APP PROCESSES
-g.check_faulty_procs()
-input("")
+# g.check_faulty_procs()
+# input("")
 
 # TEST FOR CHECKING PFD AMONG RSMS
 g.check_faulty_rsms()
@@ -44,12 +44,12 @@ input("")
 # input("")
 
 # TEST FOR ACHIEVING CONSENSUS FOR RSMS
-# g.get_consensus_rsms_processes(0, 'test4consensus')
-# input("")
-
-# TEST FOR ACHIEVING CONSENSUS FROM A *SPECIFIC* APPLICATION PROCESS
-g.ask_consensus_app_procs("helo")
+g.get_consensus_rsms_processes(0, 'test4consensus')
 input("")
+
+# TEST FOR ACHIEVING CONSENSUS FROM A *RANDOM* APPLICATION PROCESS
+# g.ask_consensus_app_procs("helo")
+# input("")
 
 # TEST FOR ACHIEVING CONSENSUS FOR *ALL* APPLICATION PROCESSES
 # g.app_nodes[0].app_ask_consensus_commander(None, "v4lu3")

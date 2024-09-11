@@ -67,24 +67,37 @@ class ApplicationGraph:
 
     ######## PFD FOR RSMS #######
 
-    def check_faulty_rsms_thread_starter(self, app_id, node_id, event, list_for_corrects):
-        list_for_corrects.append([node_id, self.app_nodes[app_id].check_faulty_rsms()])
+    def check_faulty_rsms_thread_starter(self, app_id, event, list_for_corrects):
+        FOUND = False
+
+        for elem in list_for_corrects:
+            if(app_id == elem[0]):
+                FOUND = True
+                break
+        
+        if(not FOUND):
+            val = [app_id, self.app_nodes[app_id].check_faulty_rsms(event)]
+            print(f"ApplicationGraph > AppProc : {app_id} - val : {val} - lfc : {list_for_corrects}")
+            list_for_corrects.append(val)
+        else:
+            print("Already in lfc!")
+
         event.set()
     
     def check_faulty_rsms(self):
         events = []
         list_for_corrects = []
 
-        for elem in self.app_nodes:
+        for elem in self.corrects:
             event_for_thr = threading.Event()
             events.append(event_for_thr)
-            thr = threading.Thread(target=self.check_faulty_rsms_thread_starter, args=(elem, random.randint(0, self.app_nodes[elem].get_num_nodes()-1), event_for_thr, list_for_corrects))
+            thr = threading.Thread(target=self.check_faulty_rsms_thread_starter, args=(elem, event_for_thr, list_for_corrects))
             thr.start()
 
         counter = 0
-        while(counter < len(self.app_nodes)):
+        while(counter < len(self.corrects)):
             # print(events)
-            # time.sleep(2.5)
+            time.sleep(1.2)
             counter = 0
             for elem in events:
                 if(elem.is_set()):
@@ -175,12 +188,10 @@ class ApplicationGraph:
             for elem in events:
                 if(elem.is_set()):
                     counter += 1
-        
-            time.sleep(0.2)
 
         self.consensus_events[msg_id].sort()
         
-        # time.sleep(2.0)
+        time.sleep(2.0)
         print(f"AppGraph - consensus :\n", end = "")
         for elem in self.consensus_events[msg_id]:
                 print("\t", elem)
@@ -221,9 +232,10 @@ class ApplicationGraph:
                     self.consensus_events[msg_id].append(val)
                     tmp.remove(elem)
 
+            print(tmp)
             time.sleep(0.2)
 
-        print(f"ApplicationGraph > consensus reached : {self.consensus_events[msg_id]}")
+        print(f"ApplicationGraph > consensus reached : {self.consensus_events[msg_id]} among corrects : {self.corrects}")
         return self.consensus_events[msg_id]
 
     ################################################

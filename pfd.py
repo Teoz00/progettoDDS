@@ -33,6 +33,8 @@ class PerfectFailureDetector:
             for elem2 in self.received_acks:
                 if(elem1 == elem2):
                     temp_list.append(elem1)
+            
+            # print("TEMP LIST", temp_list)
         
         if(len(temp_list) == 0):
             self.flag = "AUG_DELAY"

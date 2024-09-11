@@ -171,6 +171,7 @@ class Graph:
         event.set()
     
     def check_faulty_rsms(self):
+        print(f"CORRECTS of {self.id} : {self.corrects}")
         # for elem in self.corrects:
         #     tmp = self.nodes[elem].pfd_caller()
         #     tmp.append(elem)
@@ -182,38 +183,49 @@ class Graph:
 
         # return list_to_ret
 
-        events = []
         list_for_corrects = []
 
         for elem in self.corrects:
-            event_for_thr = Event()
-            events.append(event_for_thr)
-            thr = Thread(target=self.check_faulty_rsms_thread_starter, args=(elem, event_for_thr, list_for_corrects))
-            thr.start()
+            print(f"STARTING {elem} - {self.id}")
+            event = Event()
+            val = [elem, self.nodes[elem].pfd_caller(event)]
+            while(not(event.is_set())):
+                print(f"List updated at {elem} : {list_for_corrects}")
+                time.sleep(0.2)
+            
+            list_for_corrects.append(val)
+            print(f"List updated at {elem} : {list_for_corrects} - TERMINATED {elem} - {self.id}")
 
-        counter = 0
-        while(counter < len(self.nodes)):
-            time.sleep(0.5)
-            counter = 0
-            for elem in events:
-                if(elem.is_set()):
-                    counter += 1
+        # for elem in self.corrects:
+        #     event_for_thr = Event()
+        #     events.append(event_for_thr)
+        #     thr = Thread(target=self.check_faulty_rsms_thread_starter, args=(elem, event_for_thr, list_for_corrects))
+        #     thr.start()
+
+        # counter = 0
+        # while(counter < len(self.corrects)):
+        #     time.sleep(0.5)
+        #     counter = 0
+        #     for elem in events:
+        #         if(elem.is_set()):
+        #             counter += 1
+
+        #  print("LIST FOR CORRECTS ", self.id, " - ", list_for_corrects)
 
         voted_nodes = {}
-        for elem in self.nodes_list:
+        for elem in self.corrects:
             voted_nodes.update({elem : 0})
-            voted_nodes[0] += 1
-
-        print(f"Node {self.id} > voted_nodes : {voted_nodes}")
+            # voted_nodes[elem] += 1
 
         for elem in list_for_corrects:
-            # id : elem[0], its corrects: elem[1]
-            for detected in elem[1]:
-                voted_nodes[detected] += 1
-        
-        threshold = min(voted_nodes.values())
+            # id : elem, its corrects: elem
+            if(elem[1] != None):
+                for e in elem[1]:
+                    # print(f"e : {e}")
+                    voted_nodes[e] += 1
 
-        print("LIST FOR CORRECTS: ", list_for_corrects)
+        threshold = min(voted_nodes.values())
+        print(f"Graph {self.id} > voted_nodes : {voted_nodes} - threshold : {threshold}")        
 
         self.corrects = []
         for elem in voted_nodes:
@@ -226,8 +238,9 @@ class Graph:
         
         for elem in self.corrects:
             self.nodes[elem].cons.set_num_nodes(n)
+            self.nodes[elem].set_new_corrects(self.corrects)
 
-        print(f"Graph > new corrects : {self.corrects}")
+        print(f"Graph {self.id} > new corrects : {self.corrects}")
         return self.corrects
 
     ##################################################
