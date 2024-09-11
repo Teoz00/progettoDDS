@@ -299,6 +299,12 @@ class Graph:
         if(msg_id not in self.cons_events):
             self.cons_events.update[msg_id] = {}
 
+    def set_input_rsm_ensemble(self, event_set):
+        for elem in self.corrects:
+            res = self.nodes[elem].recv_input_rsm(event_set)
+            print(f"Graph {self.id} - RSM {elem} > final input status : {res}")
+        # TODO: may need to be completed
+
     def get_size(self):
         return len(self.nodes)
 

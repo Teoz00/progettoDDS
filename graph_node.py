@@ -779,7 +779,8 @@ class Node:
 
     def recv_input_rsm(self, event_set):
         res = self.rsm.setInput(event_set)
-        print(f"Node {self.id} - RSM $ final input status : {res}")
+        # print(f"Node {self.id} - RSM $ final input status : {res}")
+        return res
 
     ###########################
 

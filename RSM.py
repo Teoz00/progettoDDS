@@ -1,6 +1,6 @@
 from event_process import EventP
 
-class RSM:
+class RSM: # p_i,a
     def __init__(self, num_nodes):
         self.STATE = ["WAITING", "JOIN", "QUIT", "CHECKPOINT"] #MACRO -- per ogni stato passato dal server mi serve un checksum
         self.ACTUAL_STATE = None
@@ -15,7 +15,7 @@ class RSM:
         self.checkpoint = {} #events catcher / backupEvetns -- dizionario di liste {"event" : [ts,state]}
         self.output = []
 
-        self.ts = 0
+        self.ts = 0 # seq_i,a
         self.num_nodes = num_nodes
         self.internal_vector_clock = [0] * num_nodes
 
@@ -35,6 +35,7 @@ class RSM:
         #EXTENSION: 
 
     def handle_event(self, event):
+        # print("event", event)
         type = event.get_type()
         id = event.get_id()
 
@@ -59,7 +60,7 @@ class RSM:
 
         event.set_index(self.ts)
         event.set_timestamp(self.internal_vector_clock)
-        event.print_event()
+        # event.print_event()
 
     def addEvent(self, event):
         self.ACTUAL_STATE = "BUSY"
@@ -81,8 +82,8 @@ class RSM:
             self.handle_event(event)
             self.addEvent(event)
         
-        for elem in self.correct:
-            elem.print_event()
+        # for elem in self.correct:
+        #     elem.print_event()
 
         return True
 

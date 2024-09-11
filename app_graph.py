@@ -1,5 +1,5 @@
 from app_process import ApplicationProcess
-from pp2p import PerfectPointToPointLink
+from event_process import EventP
 
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -32,6 +32,10 @@ class ApplicationGraph:
 
         # consensus for each message has an entry into a dedicated structure
         self.consensus_events = {}
+
+        self.happened_events = {}
+        self.timestamp = 0
+        self.vector_clock = [0] * num_apps
 
         for node in self.app_nodes_list:
             # self.consensus_events.update({node: threading.Event()})
@@ -239,6 +243,41 @@ class ApplicationGraph:
         return self.consensus_events[msg_id]
 
     ################################################
+
+    def eventGenerator(self, type, sender, recver, msg):
+        if(not(sender in self.corrects) or not(recver in self.corrects)):
+            print("ApplicationGraph > error while generating event!!")
+
+        else:
+            match type:
+                case "SEND":
+                    self.app_nodes[sender].app_proc_send_to(type, recver, msg, None, sender)
+                    self.timestamp += 1
+                    self.vector_clock[sender] += 1
+                    self.vector_clock[recver] += 1
+                    vc = self.vector_clock.copy()
+                    self.happened_events.update({self.timestamp : {"type" : type, "node" : sender, "vc" : vc, "msg" : msg}})
+                    print(f"ApplicationGraph > happened_events status : {self.happened_events}")
+                    self.eventGenerator("RECV", sender, recver, msg)
+
+                case "RECV":
+                    self.timestamp += 1
+                    self.vector_clock[sender] += 1
+                    self.vector_clock[recver] += 1
+                    vc = self.vector_clock.copy()
+                    self.happened_events.update({self.timestamp : {"type" : type, "node" : recver, "vc" : vc, "msg" : msg}})
+                    print(f"ApplicationGraph > happened_events status : {self.happened_events}")
+
+    def app_rsm_recver(self, event_set):
+        list_of_events = []
+
+        for elem in event_set:
+            list_of_events.append(EventP(event_set[elem]["type"], elem, event_set[elem]["node"], event_set[elem]["vc"], event_set[elem]["msg"]))
+
+        for elem in self.corrects:
+            self.app_nodes[elem].app_proc_rsm_input(list_of_events)
+
+    # TODO: fare segno croce con mano sinistra
 
     def plot_graph(self):
         pos = nx.spring_layout(self.app_graph)

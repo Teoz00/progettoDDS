@@ -81,6 +81,7 @@ class ApplicationProcess:
                 self.messageLog.append(message)
 
                 reconstructed_payload = ast.literal_eval(message)        
+                print(reconstructed_payload)
                 
                 type = reconstructed_payload[0]
                 if type not in {"ACK", "SIMPLE"}:
@@ -288,6 +289,11 @@ class ApplicationProcess:
         event.set()
         return self.correct_rsms
     
+    def app_proc_rsm_input(self, event_set):
+
+        self.subgraph.set_input_rsm_ensemble(event_set)
+    # TODO may need to be completed
+
     def plot_graph(self):
         self.subgraph.plot_graph()
 

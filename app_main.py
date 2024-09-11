@@ -36,16 +36,16 @@ g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 # input("")
 
 # TEST FOR CHECKING PFD AMONG RSMS
-g.check_faulty_rsms()
-input("")
+# g.check_faulty_rsms()
+# input("")
 
 # TEST FOR DETECING FAULTY APPLICATION PROCESSES (deprecated)
 # g.app_nodes[0].app_proc_pfd_caller()
 # input("")
 
 # TEST FOR ACHIEVING CONSENSUS FOR RSMS
-g.get_consensus_rsms_processes(0, 'test4consensus')
-input("")
+# g.get_consensus_rsms_processes(0, 'test4consensus')
+# input("")
 
 # TEST FOR ACHIEVING CONSENSUS FROM A *RANDOM* APPLICATION PROCESS
 # g.ask_consensus_app_procs("helo")
@@ -54,6 +54,14 @@ input("")
 # TEST FOR ACHIEVING CONSENSUS FOR *ALL* APPLICATION PROCESSES
 # g.app_nodes[0].app_ask_consensus_commander(None, "v4lu3")
 # input("")
+
+# TEST FOR SETTING RSM INPUT EVENTS
+g.eventGenerator("SEND", 1, 0, "firstTest")
+g.eventGenerator("SEND", 2, 3, "firstTest")
+g.eventGenerator("SEND", 0, 1, "firstTest")
+g.eventGenerator("SEND", 1, 2, "firstTest")
+
+g.app_rsm_recver(g.happened_events)
 
 # for elem in g.app_nodes:
 #     print(f"{g.app_nodes[elem]} > ")
