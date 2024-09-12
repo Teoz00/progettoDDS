@@ -1,5 +1,6 @@
 from app_process import ApplicationProcess
 from event_process import EventP
+from LASKALSJ import LASKALSJ
 
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -29,6 +30,7 @@ class ApplicationGraph:
 
         self.consensus_events = {}
         self.stop_event = threading.Event()
+        self.LASKALSJ = LASKALSJ(num_apps)
 
         # consensus for each message has an entry into a dedicated structure
         self.consensus_events = {}
@@ -66,7 +68,7 @@ class ApplicationGraph:
                     if neighbor['neigh'] == node:
                         elem.update({"neigh_port": neighbor['port']})
 
-            self.app_nodes[node] = ApplicationProcess(detailed_app_nodes_list[node]['id'], detailed_app_nodes_list[node]['ip'], detailed_app_nodes_list[node]['ports'], nodes_per_subgraph, num_apps, port_counter, self.stop_event)
+            self.app_nodes[node] = ApplicationProcess(detailed_app_nodes_list[node]['id'], detailed_app_nodes_list[node]['ip'], detailed_app_nodes_list[node]['ports'], nodes_per_subgraph, num_apps, port_counter, self.LASKALSJ, self.stop_event)
             port_counter = self.app_nodes[node].get_port_counter()
 
     ######## PFD FOR RSMS #######

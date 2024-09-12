@@ -9,7 +9,7 @@ import uuid
 import time
 
 class ApplicationProcess:
-    def __init__(self, my_id, my_addr, neighbors, number_node, num_apps, base_port, stop_event):
+    def __init__(self, my_id, my_addr, neighbors, number_node, num_apps, base_port, l_matrix, stop_event):
 
         self.id = my_id
 
@@ -27,8 +27,9 @@ class ApplicationProcess:
         self.running = False
         self.listener_threads = {}
         self.links = {}
-        
-        self.subgraph = Graph(my_id, number_node, base_port, stop_event)
+        self.LASKALSJ = l_matrix
+
+        self.subgraph = Graph(my_id, number_node, base_port, self.LASKALSJ, stop_event)
         self.consensus = []
 
         self.messageLog = []
@@ -45,6 +46,7 @@ class ApplicationProcess:
 
         self.pfd = PerfectFailureDetector()
         self.cons = Consensus(self.id, num_apps)
+        self.LASKALSJ = l_matrix
 
         for elem in neighbors:
             link_addr = f"{my_addr}:{elem['port']}"

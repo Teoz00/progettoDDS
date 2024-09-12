@@ -5,23 +5,11 @@ import time
 import uuid
 from threading import Event, Thread
 
-# from dijkstra import Dijkstra
 from graph_node import Node
 
-# MODIFY graph_main.py FOR OBTAINING RESULTS!
-
-# class NodeTerm:
-#     def __init__(self, node):
-#         self.node = node
-
-#     def open_terminal(self):
-#         neighbors = self.node.get_neighbors()
-#         print(neighbors)
-#         command = f'gnome-terminal -- bash -c "python3 node_term.py {self.node.id} {self.node.address} {neighbors}; exec bash"'
-#         os.system(command)
 
 class Graph:
-    def __init__(self, id, num_nodes, base_port, event):
+    def __init__(self, id, num_nodes, base_port, l, event):
         
         self.id = str(id)
         self.nodes = {}
@@ -50,6 +38,7 @@ class Graph:
         self.consensus_events = {}
 
         self.corrects = self.G.nodes()
+        self.LASKALSJ = l
         
         # detailed_node_list -> dictionary with, for each node of the graph, the following info:
         #   <id, ip, ports: {port to neighbor, neigbor id, neighbor ip, port that neighbor uses to connect with that node}>
@@ -92,7 +81,6 @@ class Graph:
                     address_2 = {port_info['neigh_ip'] + ":" + str(port_info['neigh_port'])}
                     file.write(f"id: {node} - {port_info['neigh']}, addresses:  {address_1} - {address_2}\n")
         
-        # generates a terminal window for each node
         for node in detailed_node_list:
             # print((detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports']))
             self.nodes[node] = Node(detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports'], num_nodes, None, self.stop_event)
@@ -100,11 +88,6 @@ class Graph:
             # print(f"detailed_node_list[{node}]: {detailed_node_list[node]['ports']}")
             #print("neighbors in graph_gen.py: ", self.nodes[node].get_neighbors())
         
-        # if(option == 'term'):
-        #     for node in self.nodes:
-        #         node_term = NodeTerm(self.nodes[node])
-        #         node_term.open_terminal()
-        #         time.sleep(0.5)  # Slight delay to ensure terminal opens properly
 
     def shortPath(self, source, target):
         if(source in self.nodes_list and target in self.nodes_list) :
