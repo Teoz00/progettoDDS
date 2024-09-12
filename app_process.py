@@ -2,6 +2,7 @@ from graph_gen import Graph
 from pp2p import PerfectPointToPointLink
 from consensus import Consensus
 from pfd import PerfectFailureDetector
+from event_process import EventP
 
 import threading
 import ast
@@ -19,7 +20,7 @@ class ApplicationProcess:
         self.correct_rsms = []
         self.num_nodes = number_node
         self.num_apps = num_apps
-        self.delay = 0.005
+        self.delay = 0.1
 
         # if(self.id == 2):
         #     self.delay = 0.20
@@ -46,6 +47,8 @@ class ApplicationProcess:
 
         self.pfd = PerfectFailureDetector()
         self.cons = Consensus(self.id, num_apps)
+        
+        self.events = []
         self.LASKALSJ = l_matrix
 
         for elem in neighbors:
@@ -98,6 +101,10 @@ class ApplicationProcess:
                 self.manage_vector_clock(vc)
                 self.vectorClock[self.id] += 1
 
+                self.events.append(EventP(type, vc[origin], origin, vc, msg))
+                print(f"ApplicationProcess {self.id} > LASKALSJ")
+                self.LASKALSJ.fancy_print()
+
                 match type:
                     case "SIMPLE":
                         if(self.links[str(origin)] == link):
@@ -147,6 +154,12 @@ class ApplicationProcess:
 
         try:
             self.vectorClock[self.id] += 1
+            # self.events.append(EventP(type, vc[origin], origin, vc, msg))
+            self.events.append(EventP(type, self.vectorClock[self.id], self.id, self.vectorClock, msg))
+            self.LASKALSJ.set_val(self.id, peer_id, self.vectorClock[self.id])
+            print(f"ApplicationProcess {self.id} > LASKALSJ")
+            self.LASKALSJ.fancy_print()
+            
             print(f"ApplicationProcess {self.id} > sending [{type, peer_id, msg, msg_id, self.vectorClock, origin}] to {peer_id}")
             self.links[(str(peer_id))].send([type, msg, msg_id, self.vectorClock, self.id])
             self.messageLog.append(str([type, msg, msg_id, self.vectorClock, self.id]))

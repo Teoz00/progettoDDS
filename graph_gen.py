@@ -40,6 +40,7 @@ class Graph:
         self.corrects = self.G.nodes()
         self.LASKALSJ = l
         
+        
         # detailed_node_list -> dictionary with, for each node of the graph, the following info:
         #   <id, ip, ports: {port to neighbor, neigbor id, neighbor ip, port that neighbor uses to connect with that node}>
         # self.port_map structure -> dictionary with tuples <id of node using that port, id of node connected with>

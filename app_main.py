@@ -55,13 +55,19 @@ g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 # g.app_nodes[0].app_ask_consensus_commander(None, "v4lu3")
 # input("")
 
-# TEST FOR SETTING RSM INPUT EVENTS
-g.eventGenerator("SEND", 1, 0, "firstTest")
-g.eventGenerator("SEND", 2, 3, "firstTest")
-g.eventGenerator("SEND", 0, 1, "firstTest")
-g.eventGenerator("SEND", 1, 2, "firstTest")
+# TEST FOR SENDING MESSAGES AMONG APPLICATION PROCESSES
+g.app_nodes[0].app_proc_send_to("SIMPLE", 2, "ciao", None, 0)
+input("")
 
-g.app_rsm_recver(g.happened_events)
+# type, peer_id, msg, msg_id, origin
+
+# TEST FOR SETTING RSM INPUT EVENTS
+# g.eventGenerator("SEND", 1, 0, "firstTest")
+# g.eventGenerator("SEND", 2, 3, "firstTest")
+# g.eventGenerator("SEND", 0, 1, "firstTest")
+# g.eventGenerator("SEND", 1, 2, "firstTest")
+
+# g.app_rsm_recver(g.happened_events)
 
 # for elem in g.app_nodes:
 #     print(f"{g.app_nodes[elem]} > ")
