@@ -19,7 +19,7 @@ class V:
             self.matrix.append(init) #Instanzio la matrice con valori iniziali 0,0,0... e i rispettivi processi sopra
 
     def update(self, process_sender_index, process_recvr_index):
-            previous_sender = self.matrix[process_sender_index][len(self.matrix[process_sender_index]) - 1].copy()
+            previous_sender = self.matrix[process_sender_index][len(self.matrix[process_sender_index]) - 1].copy() #Mi faccio la copia cosi da ritornare il precedente per poi aggiornarlo
             previous_sender[process_sender_index] += 1 
             self.matrix[process_sender_index].append(previous_sender)
 
@@ -35,7 +35,8 @@ class V:
         maxP = [0] * self.lenProcesses
         for i in range(self.lenProcesses):
             for j in range(self.lenProcesses):
-                maxP[i] = max(maxP[i], self.matrix[j][len(self.matrix[j] - 1)][i])
+                #print(f" HERE WE GO: {self.matrix[j][len(self.matrix[j] - 1)][i]}")
+                maxP[i] = max(maxP[i], self.matrix[j][len(self.matrix[j]) - 1][i])
         
         return maxP #Ritorna l'array di maximum value per ogni processo
     
@@ -58,9 +59,9 @@ matrix.update(0,1)
 
 matrix.printMatrix()
 
-#maxs = matrix.getMaxID()
+maxs = matrix.getMaxID()
 
 #print(f"LAST MATRIX: {matrix}")
-#print(f"MAX VALUE: {maxs}")
+print(f"MAX VALUE\n[P1,P2,P3]:\n{maxs}")
 
 #TO LET IT WORKS DO: "python V.py " OR for linux users: "python3 V.py"
