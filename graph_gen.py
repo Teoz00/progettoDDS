@@ -287,7 +287,7 @@ class Graph:
     def set_input_rsm_ensemble(self, event_set):
         for elem in self.corrects:
             res = self.nodes[elem].recv_input_rsm(event_set)
-            print(f"Graph {self.id} - RSM {elem} > final input status : {res}")
+            #print(f"Graph {self.id} - RSM {elem} > final input status : {res}")
         # TODO: may need to be completed
 
     def update_LASKALSJ(self, sender, recver, seq):
@@ -297,7 +297,7 @@ class Graph:
 
             print(f"Graph {self.id} : LASKALSJ of node {elem} and its RSM")
             self.nodes[elem].LASKALSJ.fancy_print()
-            self.nodes[elem].rsm.LASKALSJ.fancy_print()            
+            self.nodes[elem].rsm.LASKALSJ.fancy_print()       
 
     def update_V_rsms(self, type, sender, recvr, seq):
         if(type == "SEND"):

@@ -64,8 +64,8 @@ class RSM: # p_i,a
                     
                     i += 1
 
-        event.set_index(self.ts)
-        event.set_timestamp(self.internal_vector_clock)
+        # event.set_index(self.ts)
+        # event.set_timestamp(self.internal_vector_clock)
         # event.print_event()
 
     def addEvent(self, event):
@@ -218,6 +218,9 @@ class RSM: # p_i,a
             case "test":
                 pass
 
+    def printAllEvents(self):
+        for elem in self.event:
+            print(elem[0].print_event())
 
 ###############################################################
 #NB, per usare questo test, commentare |self.checkpoint = {event : [event.get_ts(), "LISTENING"] } #mi salvo il timestamp|

@@ -63,6 +63,9 @@ time.sleep(0.5)
 g.app_nodes[1].app_proc_send_to("SIMPLE", 0, "ciao", None, 1)
 time.sleep(0.5)
 
+input("")
+# g.app_nodes[0].subgraph.nodes[0].rsm.printAllEvents()
+
 # type, peer_id, msg, msg_id, origin
 
 # TEST FOR SETTING RSM INPUT EVENTS

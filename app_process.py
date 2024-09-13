@@ -108,15 +108,21 @@ class ApplicationProcess:
                 self.vectorClock[self.id] += 1
 
                 self.events.append(EventP(type, vc[origin], origin, vc, msg))
-                self.subgraph.set_input_rsm_ensemble([EventP("SEND", origin, self.vectorClock[self.id], self.vectorClock, msg)])
-                print(f"ApplicationProcess {self.id} > LASKALSJ")
-                self.LASKALSJ.fancy_print()
-                
+
                 self.V.update_recv(origin, self.id, self.vectorClock[origin])
-                self.V.print_matrix()
                 self.update_V_subgraph("RECV", origin, self.id, self.vectorClock[origin])
+                
+                vc_1 = []
+                n = len(self.V.matrix)
+                if(n == 0):
+                    vc_1 = [0] * self.num_apps
+                else:
+                    vc_1 = self.V.matrix[n - 1]
 
-
+                print(f"ApplicationProcess {self.id} > LASKALSJ")
+                self.LASKALSJ.fancy_print()                
+                self.subgraph.set_input_rsm_ensemble([EventP("RECV", vc_1[self.id], origin, vc_1, msg)])
+                
                 match type:
                     case "SIMPLE":
                         if(self.links[str(origin)] == link):
@@ -170,7 +176,6 @@ class ApplicationProcess:
             self.events.append(EventP(type, self.vectorClock[self.id], self.id, self.vectorClock, msg))
             self.LASKALSJ.set_val(self.id, peer_id, self.vectorClock[self.id])
             self.subgraph.update_LASKALSJ(self.id, peer_id, self.vectorClock[self.id])
-            self.subgraph.set_input_rsm_ensemble([EventP("SEND", self.id, self.vectorClock[self.id],self.vectorClock, msg)])
 
             print(f"ApplicationProcess {self.id} > LASKALSJ")
             self.LASKALSJ.fancy_print()
@@ -179,6 +184,15 @@ class ApplicationProcess:
             self.V.print_matrix()
             self.update_V_subgraph("SEND", self.id, origin, self.vectorClock[self.id])
             
+            vc_1 = []
+            n = len(self.V.matrix)
+            if(n == 0):
+                vc_1 = [0] * self.num_apps
+            else:
+                vc_1 = self.V.matrix[n - 1]
+
+            self.subgraph.set_input_rsm_ensemble([EventP("SEND", self.vectorClock[self.id], self.id, vc_1, msg)])
+
             print(f"ApplicationProcess {self.id} > sending [{type, peer_id, msg, msg_id, self.vectorClock, origin}] to {peer_id}")
             self.links[(str(peer_id))].send([type, msg, msg_id, self.vectorClock, self.id])
             self.messageLog.append(str([type, msg, msg_id, self.vectorClock, self.id]))
