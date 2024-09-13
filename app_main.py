@@ -36,15 +36,11 @@ g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 # input("")
 
 # TEST FOR CHECKING PFD AMONG RSMS
-# g.check_faulty_rsms()
-# input("")
+g.check_faulty_rsms()
+input("")
 
 # TEST FOR DETECING FAULTY APPLICATION PROCESSES (deprecated)
 # g.app_nodes[0].app_proc_pfd_caller()
-# input("")
-
-# TEST FOR ACHIEVING CONSENSUS FOR RSMS
-# g.get_consensus_rsms_processes(0, 'test4consensus')
 # input("")
 
 # TEST FOR ACHIEVING CONSENSUS FROM A *RANDOM* APPLICATION PROCESS
@@ -68,6 +64,10 @@ time.sleep(1.0)
 input("")
 
 # 0 -> 2, 2 -> 0, 2 -> 1, 1 -> 0
+
+# TEST FOR ACHIEVING CONSENSUS FOR RSMS
+g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)
+input("")
 
 print("V0 - ", end = "")
 g.app_nodes[0].V.print_matrix()

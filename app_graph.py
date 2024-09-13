@@ -56,7 +56,7 @@ class ApplicationGraph:
               
             detailed_app_nodes_list[node] = {"id": node, "ip": ip, "ports": ports_for_node}
         
-        nodes_per_subgraph = int(3 * int(t_byzantine) + 1)
+        nodes_per_subgraph = int(3 * int(t_byzantine) + 2)
 
         # self.consensus_events[detailed_app_nodes_list[node]['id']]
 
