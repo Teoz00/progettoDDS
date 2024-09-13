@@ -21,5 +21,10 @@ class LASKALSJ:
             print()
         print()
 
+    def copy(self):
+        to_be_ret = LASKALSJ(self.n)
+        to_be_ret.matrix  = self.matrix
+        return to_be_ret
+
     def get_matrix(self):
         return self.matrix

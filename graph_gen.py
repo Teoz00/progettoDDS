@@ -290,6 +290,15 @@ class Graph:
             print(f"Graph {self.id} - RSM {elem} > final input status : {res}")
         # TODO: may need to be completed
 
+    def update_LASKALSJ(self, sender, recver, seq):
+        for elem in self.nodes:
+            self.nodes[elem].LASKALSJ.set_val(sender, recver, seq)
+            self.nodes[elem].rsm.LASKALSJ.set_val(sender, recver, seq)
+
+            print(f"Graph {self.id} : V of node {elem} and its RSM")
+            self.nodes[elem].LASKALSJ.fancy_print()
+            self.nodes[elem].rsm.LASKALSJ.fancy_print()            
+
     def update_V_rsms(self, type, sender, recvr, seq):
         if(type == "SEND"):
             for elem in self.nodes:

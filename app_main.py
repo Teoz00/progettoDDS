@@ -58,6 +58,10 @@ g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 # TEST FOR SENDING MESSAGES AMONG APPLICATION PROCESSES
 g.app_nodes[0].app_proc_send_to("SIMPLE", 2, "ciao", None, 0)
 input("")
+g.app_nodes[2].app_proc_send_to("SIMPLE", 1, "ciao", None, 2)
+input("")
+g.app_nodes[1].app_proc_send_to("SIMPLE", 0, "ciao", None, 1)
+input("")
 
 # type, peer_id, msg, msg_id, origin
 

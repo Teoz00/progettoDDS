@@ -8,6 +8,7 @@ from event_process import EventP
 from pfd import PerfectFailureDetector
 from consensus import Consensus
 from RSM import RSM
+from LASKALSJ import LASKALSJ
 from V import V
 
 ###
@@ -59,8 +60,8 @@ class Node:
         
         self.sent_to = {}
         self.received_with_id = {}
-                
-        self.delay = 0
+                        
+        self.LASKALSJ = LASKALSJ(self.num_apps)
         tmp = []
         for i in range(self.num_apps):
             tmp.append(i)
@@ -68,7 +69,7 @@ class Node:
 
         self.pfd = PerfectFailureDetector()
         self.cons = Consensus(self.id, self.nodes_into_network)
-        self.rsm = RSM(self.nodes_into_network, None, self.V.copy())
+        self.rsm = RSM(self.nodes_into_network, self.LASKALSJ.copy(), self.V.copy())
         
         self.delay = 0.005
 

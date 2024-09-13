@@ -168,6 +168,7 @@ class ApplicationProcess:
             # self.events.append(EventP(type, vc[origin], origin, vc, msg))
             self.events.append(EventP(type, self.vectorClock[self.id], self.id, self.vectorClock, msg))
             self.LASKALSJ.set_val(self.id, peer_id, self.vectorClock[self.id])
+            self.subgraph.update_LASKALSJ(self.id, peer_id, self.vectorClock[self.id])
             print(f"ApplicationProcess {self.id} > LASKALSJ")
             self.LASKALSJ.fancy_print()
 
