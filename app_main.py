@@ -57,19 +57,28 @@ g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 
 # TEST FOR SENDING MESSAGES AMONG APPLICATION PROCESSES
 g.app_nodes[0].app_proc_send_to("SIMPLE", 2, "ciao", None, 0)
-time.sleep(0.5)
+time.sleep(1.0)
+g.app_nodes[2].app_proc_send_to("SIMPLE", 0, "ciao", None, 2)
+time.sleep(1.0)
 g.app_nodes[2].app_proc_send_to("SIMPLE", 1, "ciao", None, 2)
-time.sleep(0.5)
+time.sleep(1.0)
 g.app_nodes[1].app_proc_send_to("SIMPLE", 0, "ciao", None, 1)
-time.sleep(0.5)
+time.sleep(1.0)
+
 input("")
 
+# 0 -> 2, 2 -> 0, 2 -> 1, 1 -> 0
+
+print("V0 - ", end = "")
+g.app_nodes[0].V.print_matrix()
+print("V1 - ", end = "")
 g.app_nodes[1].V.print_matrix()
+print("V2 - ", end = "")
 g.app_nodes[2].V.print_matrix()
 
 # processo 0, processo 2
 # evento 0,     evento 1
-print("Testing causality : ", g.test_causality(0, 2, 1, 2))
+print("Testing causality : ", g.test_causality(0, 2, 1, 1))
 
 
 # g.app_nodes[0].subgraph.nodes[0].rsm.printAllEvents()

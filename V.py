@@ -111,8 +111,7 @@ class V:
     
     def get_val(self, i, j):
         if((i >= self.n) or (j >= self.n)):
-            print("Incompatible indexes!")
-            return None
+            return True
         
         return self.matrix[i-1][j]
     
