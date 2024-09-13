@@ -107,7 +107,7 @@ class ApplicationProcess:
                 self.manage_vector_clock(vc)
                 self.vectorClock[self.id] += 1
 
-                self.events.append(EventP(type, vc[origin], origin, vc, msg))
+                self.events.append(EventP("RECV", vc[origin], origin, self.vectorClock, msg))
 
                 self.V.update_recv(origin, self.id, self.vectorClock[origin])
                 self.update_V_subgraph("RECV", origin, self.id, self.vectorClock[origin])
@@ -173,7 +173,7 @@ class ApplicationProcess:
         try:
             self.vectorClock[self.id] += 1
             # self.events.append(EventP(type, vc[origin], origin, vc, msg))
-            self.events.append(EventP(type, self.vectorClock[self.id], self.id, self.vectorClock, msg))
+            self.events.append(EventP("SEND", self.vectorClock[self.id], self.id, self.vectorClock, msg))
             self.LASKALSJ.set_val(self.id, peer_id, self.vectorClock[self.id])
             self.subgraph.update_LASKALSJ(self.id, peer_id, self.vectorClock[self.id])
 
@@ -297,6 +297,9 @@ class ApplicationProcess:
 
         return ret
 
+    def get_list_events(self):
+        return self.events
+
     def print_cons(self):
         # print("print_cons invoked")
         self.subgraph.print_agreed_values()
@@ -344,7 +347,10 @@ class ApplicationProcess:
 
     def update_V_subgraph(self, type, sender, recvr, seq):
         self.subgraph.update_V_rsms(type, sender, recvr, seq)
-        
+
+    def print_all_events(self):
+        for elem in self.events:
+            print(elem.print_event())
 
     def plot_graph(self):
         self.subgraph.plot_graph()

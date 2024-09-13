@@ -68,6 +68,7 @@
 
 class V:
     def __init__(self, procs):
+        self.n = len(procs)
         self.processes = procs
         self.matrix = []
     
@@ -108,9 +109,16 @@ class V:
     def get_num_procs(self):
         return len(self.processes)
     
+    def get_val(self, i, j):
+        if((i >= self.n) or (j >= self.n)):
+            print("Incompatible indexes!")
+            return None
+        
+        return self.matrix[i-1][j]
+    
     def copy(self):
         to_be_ret = V(self.processes)
-        to_be_ret.matrix = self.matrix
+        to_be_ret.matrix = self.matrix.copy()
         return to_be_ret
 
     def print_matrix(self):

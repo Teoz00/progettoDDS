@@ -281,6 +281,43 @@ class ApplicationGraph:
 
     # TODO: may need to be implemented
 
+    ######## TESTING CAUSALITY OF EVENTS ########
+
+    def test_causality(self, id_h, id_i, x, star):
+        # checkng if x is in list of events F_h (list of events of process h)
+        FOUND = False
+        F_h = self.app_nodes[id_h].get_list_events()
+        for elem in F_h:
+            print(f"{x} vs {elem.get_index()}")
+            if(elem.get_index() == x): # searching for a sequence number compatible with x
+                FOUND = True
+                break
+
+        print(f"x : {x} in F_i : {F_h}? {FOUND}")
+
+        if(not(FOUND)):
+            return False
+
+        # checking if star is in list of events F_i (list of events of process i)
+        F_i = self.app_nodes[id_i].get_list_events()
+        FOUND = False
+        for elem in F_i:
+            if(elem.get_index() == star):
+                FOUND = True
+                break
+
+        if(not(FOUND)):
+            return False
+        
+        V_tmp = self.app_nodes[id_h].V
+        print(V_tmp.get_val(star, id_h), x)
+    
+        return (V_tmp.get_val(star, id_h) >= x)     # !!!
+    
+        # star <= maxeventID(F_i)
+
+    #############################################
+
     def plot_graph(self):
         pos = nx.spring_layout(self.app_graph)
         plt.title("Application Graph")

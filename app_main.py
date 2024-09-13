@@ -62,8 +62,16 @@ g.app_nodes[2].app_proc_send_to("SIMPLE", 1, "ciao", None, 2)
 time.sleep(0.5)
 g.app_nodes[1].app_proc_send_to("SIMPLE", 0, "ciao", None, 1)
 time.sleep(0.5)
-
 input("")
+
+g.app_nodes[1].V.print_matrix()
+g.app_nodes[2].V.print_matrix()
+
+# processo 0, processo 2
+# evento 0,     evento 1
+print("Testing causality : ", g.test_causality(0, 2, 1, 2))
+
+
 # g.app_nodes[0].subgraph.nodes[0].rsm.printAllEvents()
 
 # type, peer_id, msg, msg_id, origin
