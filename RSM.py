@@ -1,7 +1,7 @@
 from event_process import EventP
 
 class RSM: # p_i,a
-    def __init__(self, num_nodes):
+    def __init__(self, num_nodes, l, v):
         self.STATE = ["WAITING", "JOIN", "QUIT", "CHECKPOINT"] #MACRO -- per ogni stato passato dal server mi serve un checksum
         self.ACTUAL_STATE = None
         self.ACTIONS = ["SUM", "MULL", "DIVIDING"] #Basic operations
@@ -18,6 +18,9 @@ class RSM: # p_i,a
         self.ts = 0 # seq_i,a
         self.num_nodes = num_nodes
         self.internal_vector_clock = [0] * num_nodes
+
+        self.LASKALSJ = l
+        self.V = v
 
         #self.input  #client request
         #output something
@@ -216,16 +219,16 @@ class RSM: # p_i,a
 ###############################################################
 #NB, per usare questo test, commentare |self.checkpoint = {event : [event.get_ts(), "LISTENING"] } #mi salvo il timestamp|
 #Ed usare python RSM.py
-rsm = RSM(5)
+# rsm = RSM(5)
 
-event1 = EventP("SEND", 1, 0, [4, 3, 5], "Ciao1")
-event2 = EventP("SEND", 1, 1, [4, 3, 5], "Ciao2")
+# event1 = EventP("SEND", 1, 0, [4, 3, 5], "Ciao1")
+# event2 = EventP("SEND", 1, 1, [4, 3, 5], "Ciao2")
  
-#rsm.addEvent("1")
-#rsm.addEvent("2")
-#rsm.addEvent(3)
-rsm.addEvent(event1)
-rsm.addEvent(event2) 
+# #rsm.addEvent("1")
+# #rsm.addEvent("2")
+# #rsm.addEvent(3)
+# rsm.addEvent(event1)
+# rsm.addEvent(event2) 
 
 # rsm.checkCorrectness()
 ##################################################

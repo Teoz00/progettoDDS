@@ -9,7 +9,7 @@ from graph_node import Node
 
 
 class Graph:
-    def __init__(self, id, num_nodes, base_port, l, event):
+    def __init__(self, id, num_nodes, base_port, l, v, event):
         
         self.id = str(id)
         self.nodes = {}
@@ -39,6 +39,7 @@ class Graph:
 
         self.corrects = self.G.nodes()
         self.LASKALSJ = l
+        self.V = v
         
         
         # detailed_node_list -> dictionary with, for each node of the graph, the following info:
@@ -84,7 +85,7 @@ class Graph:
         
         for node in detailed_node_list:
             # print((detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports']))
-            self.nodes[node] = Node(detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports'], num_nodes, None, self.stop_event)
+            self.nodes[node] = Node(detailed_node_list[node]['id'], detailed_node_list[node]['ip'], detailed_node_list[node]['ports'], num_nodes, self.V.get_num_procs(), None, self.stop_event)
             
             # print(f"detailed_node_list[{node}]: {detailed_node_list[node]['ports']}")
             #print("neighbors in graph_gen.py: ", self.nodes[node].get_neighbors())
@@ -288,6 +289,17 @@ class Graph:
             res = self.nodes[elem].recv_input_rsm(event_set)
             print(f"Graph {self.id} - RSM {elem} > final input status : {res}")
         # TODO: may need to be completed
+
+    def update_V_rsms(self, type, sender, recvr, seq):
+        if(type == "SEND"):
+            for elem in self.nodes:
+                self.nodes[elem].V.update_send(sender, recvr, seq)
+                self.nodes[elem].rsm.V.update_send(sender, recvr, seq)
+                
+        elif(type == "RECV"):
+            for elem in self.nodes:
+                self.nodes[elem].V.update_recv(sender, recvr, seq)
+                self.nodes[elem].rsm.V.update_recv(sender, recvr, seq)
 
     def get_size(self):
         return len(self.nodes)

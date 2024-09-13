@@ -8,11 +8,12 @@ from event_process import EventP
 from pfd import PerfectFailureDetector
 from consensus import Consensus
 from RSM import RSM
+from V import V
 
 ###
 
 class Node:
-    def __init__(self, my_id, my_addr, neighbors, all, delay, event):
+    def __init__(self, my_id, my_addr, neighbors, all, num_apps, delay, event):
         threading.stack_size(2147483647)
         self.id = my_id
         
@@ -20,6 +21,7 @@ class Node:
         self.links = {}
         self.address = my_addr
         self.nodes_into_network = int(all)
+        self.num_apps = num_apps
 
         self.corrects = []
 
@@ -31,6 +33,7 @@ class Node:
         self.event_set = []
         
         self.vectorClock = [0] * (self.nodes_into_network)
+
         
         # list of messages received during the execution
         self.messageLog = []
@@ -58,10 +61,14 @@ class Node:
         self.received_with_id = {}
                 
         self.delay = 0
-        
+        tmp = []
+        for i in range(self.num_apps):
+            tmp.append(i)
+        self.V = V(tmp)
+
         self.pfd = PerfectFailureDetector()
         self.cons = Consensus(self.id, self.nodes_into_network)
-        self.rsm = RSM(self.nodes_into_network)
+        self.rsm = RSM(self.nodes_into_network, None, self.V.copy())
         
         self.delay = 0.005
 

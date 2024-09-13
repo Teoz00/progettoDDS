@@ -3,6 +3,7 @@ from pp2p import PerfectPointToPointLink
 from consensus import Consensus
 from pfd import PerfectFailureDetector
 from event_process import EventP
+from V import V
 
 import threading
 import ast
@@ -28,9 +29,16 @@ class ApplicationProcess:
         self.running = False
         self.listener_threads = {}
         self.links = {}
-        self.LASKALSJ = l_matrix
 
-        self.subgraph = Graph(my_id, number_node, base_port, self.LASKALSJ, stop_event)
+        self.events = []
+        self.LASKALSJ = l_matrix
+        
+        tmp = []
+        for i in range(self.num_apps):
+            tmp.append(i)
+        self.V = V(tmp)
+
+        self.subgraph = Graph(my_id, number_node, base_port, self.LASKALSJ, self.V, stop_event)
         self.consensus = []
 
         self.messageLog = []
@@ -48,8 +56,6 @@ class ApplicationProcess:
         self.pfd = PerfectFailureDetector()
         self.cons = Consensus(self.id, num_apps)
         
-        self.events = []
-        self.LASKALSJ = l_matrix
 
         for elem in neighbors:
             link_addr = f"{my_addr}:{elem['port']}"
@@ -104,6 +110,11 @@ class ApplicationProcess:
                 self.events.append(EventP(type, vc[origin], origin, vc, msg))
                 print(f"ApplicationProcess {self.id} > LASKALSJ")
                 self.LASKALSJ.fancy_print()
+                
+                self.V.update_recv(origin, self.id, self.vectorClock[origin])
+                self.V.print_matrix()
+                self.update_V_subgraph("RECV", origin, self.id, self.vectorClock[origin])
+
 
                 match type:
                     case "SIMPLE":
@@ -159,6 +170,10 @@ class ApplicationProcess:
             self.LASKALSJ.set_val(self.id, peer_id, self.vectorClock[self.id])
             print(f"ApplicationProcess {self.id} > LASKALSJ")
             self.LASKALSJ.fancy_print()
+
+            self.V.update_send(self.id, peer_id, self.vectorClock[self.id])
+            self.V.print_matrix()
+            self.update_V_subgraph("SEND", self.id, origin, self.vectorClock[self.id])
             
             print(f"ApplicationProcess {self.id} > sending [{type, peer_id, msg, msg_id, self.vectorClock, origin}] to {peer_id}")
             self.links[(str(peer_id))].send([type, msg, msg_id, self.vectorClock, self.id])
@@ -308,6 +323,10 @@ class ApplicationProcess:
 
         self.subgraph.set_input_rsm_ensemble(event_set)
     # TODO may need to be completed
+
+    def update_V_subgraph(self, type, sender, recvr, seq):
+        self.subgraph.update_V_rsms(type, sender, recvr, seq)
+        
 
     def plot_graph(self):
         self.subgraph.plot_graph()

@@ -71,7 +71,21 @@ class V:
         self.processes = procs
         self.matrix = []
     
-    def update(self, sendr_id, recvr_id, seq_n):
+    def update_send(self, sendr_id, recvr_id, seq_n):
+        if((sendr_id in self.processes) and (recvr_id in self.processes)):
+            tmp = []
+            if(len(self.matrix) > 0):
+                tmp = self.matrix[len(self.matrix) - 1].copy()
+            else:
+                tmp = [0] * (len(self.processes))
+
+            tmp[self.processes.index(sendr_id)] = seq_n
+            # tmp[self.processes.index(recvr_id)] += 1
+
+            self.matrix.append(tmp)
+
+
+    def update_recv(self, sendr_id, recvr_id, seq_n):
         if((sendr_id in self.processes) and (recvr_id in self.processes)):
             tmp = []
             if(len(self.matrix) > 0):
@@ -90,7 +104,15 @@ class V:
                 return 0
             return self.matrix[len(self.matrix) - 1][self.processes.index(id)]
         return False
+
+    def get_num_procs(self):
+        return len(self.processes)
     
+    def copy(self):
+        to_be_ret = V(self.processes)
+        to_be_ret.matrix = self.matrix
+        return to_be_ret
+
     def print_matrix(self):
         print("V:", end = "\nprocs:\t")
         
@@ -106,16 +128,16 @@ class V:
             print("", end = "\n")
         print()
 
-v = V([1, 2, 3])
-v.print_matrix()
-v.update(1, 2, (v.get_max_sn(1) + 1))
-v.print_matrix()
+# v = V([1, 2, 3])
+# v.print_matrix()
+# v.update(1, 2, (v.get_max_sn(1) + 1))
+# v.print_matrix()
 
-v.update(2, 3, (v.get_max_sn(2) + 1))
-v.print_matrix()
+# v.update(2, 3, (v.get_max_sn(2) + 1))
+# v.print_matrix()
 
-v.update(3, 1, (v.get_max_sn(3) + 1))
-v.print_matrix()
+# v.update(3, 1, (v.get_max_sn(3) + 1))
+# v.print_matrix()
 
-v.update(1, 3, (v.get_max_sn(1) + 1))
-v.print_matrix()
+# v.update(1, 3, (v.get_max_sn(1) + 1))
+# v.print_matrix()
