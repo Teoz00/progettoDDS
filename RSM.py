@@ -40,7 +40,10 @@ class RSM: # p_i,a
     def handle_event(self, event):
         # print("event", event)
         type = event.get_type()
+        
         id = event.get_id()
+        if id == None:
+            id = self.ts
 
         match type:
             case "SEND":

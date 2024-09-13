@@ -295,7 +295,7 @@ class Graph:
             self.nodes[elem].LASKALSJ.set_val(sender, recver, seq)
             self.nodes[elem].rsm.LASKALSJ.set_val(sender, recver, seq)
 
-            print(f"Graph {self.id} : V of node {elem} and its RSM")
+            print(f"Graph {self.id} : LASKALSJ of node {elem} and its RSM")
             self.nodes[elem].LASKALSJ.fancy_print()
             self.nodes[elem].rsm.LASKALSJ.fancy_print()            
 
