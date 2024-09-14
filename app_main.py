@@ -68,6 +68,7 @@ input("PRESS ENTER TO CONTINUE")
 # TEST FOR ACHIEVING CONSENSUS FOR RSMS
 # TEST FOR ACHIEVING CONSENSUS FOR RSMS
 if(g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)):
+    input("PRESS ENTER TO CONTINUE")
     if(g.get_consensus_rsms_processes(1, g.app_nodes[2].subgraph.nodes[0].rsm.V.matrix)):
         input("PRESS ENTER TO CONTINUE")
 
@@ -91,11 +92,6 @@ if(g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matr
 # g.app_nodes[1].V.print_matrix()
 # print("V2 - ", end = "")
 # g.app_nodes[2].V.print_matrix()
-
-# processo 0, processo 2
-# evento 0,     evento 1
-print("Testing causality : ", g.test_causality(0, 2, 1, 1))
-
 
 # g.app_nodes[0].subgraph.nodes[0].rsm.printAllEvents()
 
