@@ -37,7 +37,7 @@ g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 
 # TEST FOR CHECKING PFD AMONG RSMS
 g.check_faulty_rsms()
-input("")
+input("PRESS ENTER TO CONTINUE")
 
 # TEST FOR DETECING FAULTY APPLICATION PROCESSES (deprecated)
 # g.app_nodes[0].app_proc_pfd_caller()
@@ -61,7 +61,7 @@ time.sleep(1.0)
 g.app_nodes[1].app_proc_send_to("SIMPLE", 0, "ciao", None, 1)
 time.sleep(1.0)
 
-input("")
+input("PRESS ENTER TO CONTINUE")
 
 # 0 -> 2, 2 -> 0, 2 -> 1, 1 -> 0
 
@@ -69,7 +69,7 @@ input("")
 # TEST FOR ACHIEVING CONSENSUS FOR RSMS
 if(g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)):
     if(g.get_consensus_rsms_processes(1, g.app_nodes[2].subgraph.nodes[0].rsm.V.matrix)):
-        input("")
+        input("PRESS ENTER TO CONTINUE")
 
         print("V0 - ", end = "")
         g.app_nodes[0].V.print_matrix()
@@ -81,7 +81,7 @@ if(g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matr
         # processo 0, processo 2
         # evento 0,     evento 1
         print("Testing causality : ", g.test_causality(0, 2, 1, 1))
-        input("")
+        input("PRESS ENTER TO CONTINUE")
 # g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)
 # input("")
 

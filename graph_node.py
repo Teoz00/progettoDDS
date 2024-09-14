@@ -15,7 +15,7 @@ from V import V
 
 class Node:
     def __init__(self, my_id, my_addr, neighbors, all, num_apps, delay, event):
-        threading.stack_size(2147483647)
+        threading.stack_size(10**8)
         self.id = my_id
         
         # it contains all pp2p links needed for communicating with neighbors, dictionary
