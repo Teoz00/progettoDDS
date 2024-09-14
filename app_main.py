@@ -1,5 +1,6 @@
 from app_graph import ApplicationGraph
 
+import matplotlib.pyplot as plt
 import sys
 import time
 import os
@@ -36,8 +37,13 @@ g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
 # input("")
 
 # TEST FOR CHECKING PFD AMONG RSMS
+t = time.time()
 g.check_faulty_rsms()
+t = time.time() - t
 input("PRESS ENTER TO CONTINUE")
+print("time needed : ", t)
+input("PRESS ENTER TO CONTINUE")
+
 
 # TEST FOR DETECING FAULTY APPLICATION PROCESSES (deprecated)
 # g.app_nodes[0].app_proc_pfd_caller()
@@ -66,7 +72,8 @@ input("PRESS ENTER TO CONTINUE")
 # 0 -> 2, 2 -> 0, 2 -> 1, 1 -> 0
 
 # TEST FOR ACHIEVING CONSENSUS FOR RSMS
-# TEST FOR ACHIEVING CONSENSUS FOR RSMS
+
+# get_consensus_rsms_processes needs the id of the rsm and what they need to agree
 if(g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)):
     input("PRESS ENTER TO CONTINUE")
     if(g.get_consensus_rsms_processes(1, g.app_nodes[2].subgraph.nodes[0].rsm.V.matrix)):
