@@ -389,7 +389,7 @@ class Node:
 
                                                 # decomposing payload into a list...
                                                 m = ast.literal_eval(message)
-                                                content = m[1].split(", ")
+                                                content = m[1].split(", ", 2)
 
                                                 # print(f"Node {self.id} : content = {content}")
                                                 
