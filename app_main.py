@@ -139,7 +139,7 @@ if(g.get_consensus_single_proc(1, 3, g.app_nodes[1].subgraph.nodes[3].rsm.V.matr
         g.app_nodes[2].V.print_matrix()
         
         t = time.time()
-        print("Testing causality : ", g.test_causality(1, 2, 0, 1))
+        print("Testing causality : ", g.test_causality(1, 2, 2, 1))
         t = time.time() - t
         times.update({"Causality check 2" : t})
         
