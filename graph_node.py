@@ -78,10 +78,10 @@ class Node:
         # else:
         #     self.delay = 1.0
         
-        if(self.id == 2):
-            self.delay = 2.15
-        else:
-            self.delay = 0.005
+        # if(self.id == 2):
+        #     self.delay = 2.15
+        # else:
+        #     self.delay = 0.005
 
         for elem in neighbors:
             # print(my_addr + ":" + str(elem['port']), my_addr)
