@@ -66,15 +66,31 @@ input("")
 # 0 -> 2, 2 -> 0, 2 -> 1, 1 -> 0
 
 # TEST FOR ACHIEVING CONSENSUS FOR RSMS
-g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)
-input("")
+# TEST FOR ACHIEVING CONSENSUS FOR RSMS
+if(g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)):
+    if(g.get_consensus_rsms_processes(1, g.app_nodes[2].subgraph.nodes[0].rsm.V.matrix)):
+        input("")
 
-print("V0 - ", end = "")
-g.app_nodes[0].V.print_matrix()
-print("V1 - ", end = "")
-g.app_nodes[1].V.print_matrix()
-print("V2 - ", end = "")
-g.app_nodes[2].V.print_matrix()
+        print("V0 - ", end = "")
+        g.app_nodes[0].V.print_matrix()
+        print("V1 - ", end = "")
+        g.app_nodes[1].V.print_matrix()
+        print("V2 - ", end = "")
+        g.app_nodes[2].V.print_matrix()
+
+        # processo 0, processo 2
+        # evento 0,     evento 1
+        print("Testing causality : ", g.test_causality(0, 2, 1, 1))
+        input("")
+# g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)
+# input("")
+
+# print("V0 - ", end = "")
+# g.app_nodes[0].V.print_matrix()
+# print("V1 - ", end = "")
+# g.app_nodes[1].V.print_matrix()
+# print("V2 - ", end = "")
+# g.app_nodes[2].V.print_matrix()
 
 # processo 0, processo 2
 # evento 0,     evento 1

@@ -23,6 +23,8 @@ class ApplicationProcess:
         self.num_apps = num_apps
         self.delay = 0.1
 
+        self.byz = int((self.num_nodes - 2) / 3)
+
         # if(self.id == 2):
         #     self.delay = 0.20
 

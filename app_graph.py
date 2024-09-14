@@ -39,6 +39,8 @@ class ApplicationGraph:
         self.timestamp = 0
         self.vector_clock = [0] * num_apps
 
+        self.byz = t_byzantine
+
         for node in self.app_nodes_list:
             # self.consensus_events.update({node: threading.Event()})
             for neighbor in self.app_graph.neighbors(node):
@@ -198,9 +200,18 @@ class ApplicationGraph:
         self.consensus_events[msg_id].sort()
         
         time.sleep(2.0)
-        print(f"AppGraph - consensus :\n", end = "")
+        print(f"AppGraph - consensus of ensemble {id}:")
+        threshold = (3 * self.byz + 1)
         for elem in self.consensus_events[msg_id]:
-                print("\t", elem)
+                print("elem[1] ", elem[1])
+                n = len(elem[1][0])
+                if(n < threshold):
+                    print("Impossible to reach consensus, number of RSM less than (3t+1)")
+                    return False
+                
+                print(f" - RSM {elem[0]} : {elem[1][0]}, len = {len(elem[1][0])}")
+
+        return True
 
     ########################################
 
