@@ -23,10 +23,13 @@ def directory_cleaner():
     except OSError:
         print("\nError while cleaning 'txt_files' directory")
 
+times = {}
 
 sys.setrecursionlimit(2147483647) # max int C as parameter
+t = time.time()
 g = ApplicationGraph(int(sys.argv[1]), int(sys.argv[2]))
-
+t = time.time() - t
+times.update({"Initialization" : t})
 # g.plot_graph()
 
 # TEST FOR GIVING INPUT TO RSM
@@ -41,7 +44,7 @@ t = time.time()
 g.check_faulty_rsms()
 t = time.time() - t
 input("PRESS ENTER TO CONTINUE")
-print("time needed : ", t)
+times.update({"RSMs faulty check" : t})
 input("PRESS ENTER TO CONTINUE")
 
 
@@ -58,13 +61,28 @@ input("PRESS ENTER TO CONTINUE")
 # input("")
 
 # TEST FOR SENDING MESSAGES AMONG APPLICATION PROCESSES
+t = time.time()
 g.app_nodes[0].app_proc_send_to("SIMPLE", 2, "ciao", None, 0)
+t = time.time() - t
+times.update({"0 sends to 2" : t})
 time.sleep(1.0)
+
+t = time.time()
 g.app_nodes[2].app_proc_send_to("SIMPLE", 0, "ciao", None, 2)
+t = time.time() - t
+times.update({"2 sends to 0" : t})
 time.sleep(1.0)
+
+t = time.time()
 g.app_nodes[2].app_proc_send_to("SIMPLE", 1, "ciao", None, 2)
+t = time.time() - t
+times.update({"2 sends to 1" : t})
 time.sleep(1.0)
+
+t = time.time()
 g.app_nodes[1].app_proc_send_to("SIMPLE", 0, "ciao", None, 1)
+t = time.time() - t
+times.update({"1 sends to 0" : t})
 time.sleep(1.0)
 
 input("PRESS ENTER TO CONTINUE")
@@ -73,10 +91,16 @@ input("PRESS ENTER TO CONTINUE")
 
 # TEST FOR ACHIEVING CONSENSUS FOR RSMS
 
-# get_consensus_rsms_processes needs the id of the rsm and what they need to agree
-if(g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)):
+# get_consensus_rsms_processes needs the id of the process, the id of the rsm and what they need to agree
+t = time.time()
+if(g.get_consensus_single_proc(0, 0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)):
+    t = time.time() - t
+    times.update({"Consensus RSM(0,0)" : t})
     input("PRESS ENTER TO CONTINUE")
-    if(g.get_consensus_rsms_processes(1, g.app_nodes[2].subgraph.nodes[0].rsm.V.matrix)):
+    t = time.time()
+    if(g.get_consensus_single_proc(2, 1, g.app_nodes[2].subgraph.nodes[1].rsm.V.matrix)):
+        t = time.time() -t
+        times.update({"Consensus RMS(2,1)" : t})
         input("PRESS ENTER TO CONTINUE")
 
         print("V0 - ", end = "")
@@ -88,8 +112,41 @@ if(g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matr
 
         # processo 0, processo 2
         # evento 0,     evento 1
+        t = time.time()
         print("Testing causality : ", g.test_causality(0, 2, 1, 1))
+        t = time.time() - t
+        times.update({"Causality check 1" : t})
+
         input("PRESS ENTER TO CONTINUE")
+
+        
+t = time.time()
+if(g.get_consensus_single_proc(1, 3, g.app_nodes[1].subgraph.nodes[3].rsm.V.matrix)):
+    t = time.time() - t
+    times.update({"Consensus RSM(1,3)" : t})
+    input("PRESS ENTER TO CONTINUE")
+    t = time.time()
+    if(g.get_consensus_single_proc(2, 1, g.app_nodes[2].subgraph.nodes[1].rsm.V.matrix)):
+        t = time.time() -t
+        times.update({"Consensus RMS(2,1)" : t})
+        input("PRESS ENTER TO CONTINUE")
+
+        print("V0 - ", end = "")
+        g.app_nodes[0].V.print_matrix()
+        print("V1 - ", end = "")
+        g.app_nodes[1].V.print_matrix()
+        print("V2 - ", end = "")
+        g.app_nodes[2].V.print_matrix()
+        
+        t = time.time()
+        print("Testing causality : ", g.test_causality(1, 2, 0, 1))
+        t = time.time() - t
+        times.update({"Causality check 2" : t})
+        
+        
+        input("PRESS ENTER TO CONTINUE")
+        print("times : ", times)
+
 # g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matrix)
 # input("")
 
@@ -119,6 +176,19 @@ if(g.get_consensus_rsms_processes(0, g.app_nodes[0].subgraph.nodes[0].rsm.V.matr
 
 g.stop_event.set()
 g.cleanup()
+labels = list(times.keys())
+sizes = list(times.values())
+
+plt.barh(labels, sizes, color='#039dfc')
+plt.xlabel('Time (s)')
+plt.ylabel('Phases')
+plt.title('Execution time distribution')
+
+plt.tight_layout()
+plt.show()
+
+for index, value in enumerate(sizes):
+    plt.text(value, index, f'{value:.6f}', va='center', ha='left', color='black')
 
 if(len(sys.argv) == 4):
     if(sys.argv[3] == "clean"):

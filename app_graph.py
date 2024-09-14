@@ -175,6 +175,25 @@ class ApplicationGraph:
         self.consensus_events[msg_id].append([node_id, self.app_nodes[node_id].get_rsm_consensus(id, msg_id, value)])
         event.set()
 
+    def get_consensus_single_proc(self, id_proc, id_rsm, val):
+        msg_id = str(uuid.uuid4())
+        event = threading.Event()
+        
+        self.consensus_events[msg_id] = []
+        
+        thr = threading.Thread(target=self.get_consensus_rsms_thread_starter, args=(id_proc, id_rsm, msg_id, val, event))
+        thr.start()
+        
+        while(not(event.is_set())):
+            time.sleep(0.2)
+
+        print(f"AppGraph - consensus of ensemble {id}:")
+        threshold = (3 * self.byz + 1)
+        if(len(self.consensus_events[msg_id][0][1][0]) < threshold):
+            return False
+        
+        return True
+
     def get_consensus_rsms_processes(self, id, value):
         msg_id = str(uuid.uuid4())
         events = []

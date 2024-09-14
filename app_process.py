@@ -110,6 +110,7 @@ class ApplicationProcess:
                 self.vectorClock[self.id] += 1
 
                 self.events.append(EventP("RECV", len(self.events) + 1, origin, self.vectorClock, msg))
+                
 
                 self.V.update_recv(origin, self.id, self.vectorClock[origin])
                 self.update_V_subgraph("RECV", origin, self.id, self.vectorClock[origin])
@@ -229,6 +230,7 @@ class ApplicationProcess:
         print({str(id) in self.correct_rsms})
         if(id in self.correct_rsms):
             cons.append(self.subgraph.ask_consensus(id, msg_id, msg))
+            
             # self.subgraph.nodes[id].asking_for_consensus_commander(msg)
         
         print(f"ApplicationProcess {self.id} > consensus list {cons}")
